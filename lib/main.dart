@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:silent_signal/app/chat.dart';
 import 'package:silent_signal/app/profile.dart';
+import 'package:silent_signal/app/settings.dart';
 import 'package:silent_signal/auth/login.dart';
 import 'package:silent_signal/auth/register.dart';
 
@@ -81,10 +82,12 @@ class ChatApp extends StatelessWidget {
         brightness: Brightness.dark,
       ),
       themeMode: ThemeMode.system,
-      initialRoute: "/app",
+      initialRoute: "/chat",
       routes: {
         "/app": (context) => const MainScreen(),
+        "/chat": (context) => const ChatRoom(),
         "/profile": (context) => const ProfileScreen(),
+        "/settings": (context) => const SettingScreen(),
       },
     );
   }
@@ -118,6 +121,5 @@ class Auth extends StatelessWidget {
 Future<bool> checkToken() async {
   final pref = await SharedPreferences.getInstance();
   final token = pref.get("token");
-  // await Future.delayed(const Duration(seconds: 3));
   return token == null;
 }

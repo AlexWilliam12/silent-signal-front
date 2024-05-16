@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:silent_signal/services/websocket.dart';
 
@@ -133,6 +134,96 @@ class _ChatBodyState extends State<ChatBody> {
           return const Center(child: CircularProgressIndicator());
         }
       },
+    );
+  }
+}
+
+class ChatRoom extends StatefulWidget {
+  const ChatRoom({super.key});
+
+  @override
+  State<ChatRoom> createState() => _ChatRoomState();
+}
+
+class _ChatRoomState extends State<ChatRoom> {
+  bool _isTyping = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Row(
+          children: [
+            GestureDetector(
+              onTap: () {},
+              child: CircleAvatar(
+                radius: 22,
+                backgroundColor: Colors.green,
+                child: Text('A'),
+              ),
+            ),
+            const SizedBox(width: 20),
+            SizedBox(
+              width: MediaQuery.of(context).size.width - 100,
+              child: const Text(
+                'Fulano KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 21,
+                  color: Colors.white,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
+          ],
+        ),
+        toolbarHeight: 65,
+        backgroundColor: const Color.fromARGB(255, 0, 15, 83),
+      ),
+      body: Column(
+        children: [
+          const Expanded(child: Text('teste')),
+          Container(
+            height: 90,
+            decoration: const BoxDecoration(
+              border: Border(
+                top: BorderSide(
+                  width: 0.1,
+                  color: Colors.grey,
+                ),
+              ),
+            ),
+            child: Center(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 15),
+                    width: 300,
+                    child: Expanded(
+                      child: TextFormField(
+                        autocorrect: true,
+                        textCapitalization: TextCapitalization.sentences,
+                        decoration: const InputDecoration(
+                          hintText: 'Send a message...',
+                        ),
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () {},
+                    icon: const Icon(Icons.attach_file),
+                  ),
+                  IconButton(
+                    onPressed: () {},
+                    icon: Icon(_isTyping ? Icons.mic : Icons.send),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

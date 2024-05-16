@@ -1,7 +1,23 @@
-import 'package:flutter/material.dart';
+import 'dart:io';
 
-class RegisterScreen extends StatelessWidget {
+import 'package:flutter/material.dart';
+import 'package:silent_signal/consts/enchecao_de_linguica.dart';
+import 'package:image_picker/image_picker.dart';
+
+class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
+
+  @override
+  State<RegisterScreen> createState() => _RegisterScreenState();
+}
+
+class _RegisterScreenState extends State<RegisterScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _usernameController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmController = TextEditingController();
+  bool _terms = false;
+  File? _file;
 
   @override
   Widget build(BuildContext context) {
@@ -27,115 +43,224 @@ class RegisterScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 35),
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 25),
+              Form(
+                key: _formKey,
                 child: Column(
                   children: [
-                    const TextField(
-                      keyboardType: TextInputType.text,
-                      autofocus: true,
-                      decoration: InputDecoration(
-                        prefixIcon: Icon(Icons.person),
-                        hintText: 'Enter your username..',
-                        labelText: 'Username',
-                        floatingLabelStyle: TextStyle(
-                          color: Colors.blue,
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(
-                            color: Colors.blue,
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 25),
+                      child: Column(
+                        children: [
+                          TextFormField(
+                            controller: _usernameController,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'This field cannot be empty';
+                              }
+                              return null;
+                            },
+                            keyboardType: TextInputType.text,
+                            autofocus: true,
+                            decoration: const InputDecoration(
+                              prefixIcon: Icon(Icons.person),
+                              hintText: 'Enter your username..',
+                              labelText: 'Username',
+                              floatingLabelStyle: TextStyle(
+                                color: Colors.blue,
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderSide: BorderSide(
+                                  color: Colors.blue,
+                                ),
+                              ),
+                              border: OutlineInputBorder(),
+                            ),
                           ),
-                        ),
-                        border: OutlineInputBorder(),
+                          const SizedBox(height: 30),
+                          TextFormField(
+                            controller: _passwordController,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'This field cannot be empty';
+                              }
+                              return null;
+                            },
+                            keyboardType: TextInputType.text,
+                            obscureText: true,
+                            decoration: const InputDecoration(
+                              prefixIcon: Icon(Icons.lock),
+                              hintText: 'Enter your password..',
+                              labelText: 'Password',
+                              floatingLabelStyle: TextStyle(
+                                color: Colors.blue,
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderSide: BorderSide(
+                                  color: Colors.blue,
+                                ),
+                              ),
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                          const SizedBox(height: 30),
+                          TextFormField(
+                            controller: _confirmController,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'This field cannot be empty';
+                              } else if (value != _passwordController.text) {
+                                return 'Passwords are not the same';
+                              }
+                              return null;
+                            },
+                            keyboardType: TextInputType.text,
+                            obscureText: true,
+                            decoration: const InputDecoration(
+                              prefixIcon: Icon(Icons.lock),
+                              hintText: 'Confirm your password..',
+                              labelText: 'Confirm Password',
+                              floatingLabelStyle: TextStyle(
+                                color: Colors.blue,
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderSide: BorderSide(
+                                  color: Colors.blue,
+                                ),
+                              ),
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 30),
-                    const TextField(
-                      keyboardType: TextInputType.text,
-                      obscureText: true,
-                      decoration: InputDecoration(
-                        prefixIcon: Icon(Icons.lock),
-                        hintText: 'Enter your password..',
-                        labelText: 'Password',
-                        floatingLabelStyle: TextStyle(
-                          color: Colors.blue,
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(
-                            color: Colors.blue,
+                    const SizedBox(height: 25),
+                    SizedBox(
+                      width: 300,
+                      child: CheckboxListTile(
+                        value: _terms,
+                        onChanged: (value) {
+                          setState(() {
+                            _terms = value!;
+                          });
+                        },
+                        title: TextButton(
+                          onPressed: () {
+                            showDialog(
+                              context: context,
+                              builder: (context) {
+                                return AlertDialog(
+                                  title: const Text('Termos e Condições'),
+                                  content: const SingleChildScrollView(
+                                    child: Text(blabla),
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      child: const Text('Close'),
+                                    ),
+                                    TextButton(
+                                      onPressed: () {
+                                        setState(() {
+                                          _terms = true;
+                                        });
+                                        Navigator.pop(context);
+                                      },
+                                      child: const Text('Accept'),
+                                    ),
+                                  ],
+                                );
+                              },
+                            );
+                          },
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              Icon(Icons.info),
+                              Text('Terms and Conditions'),
+                            ],
                           ),
                         ),
-                        border: OutlineInputBorder(),
                       ),
                     ),
-                    const SizedBox(height: 30),
-                    const TextField(
-                      keyboardType: TextInputType.text,
-                      obscureText: true,
-                      decoration: InputDecoration(
-                        prefixIcon: Icon(Icons.lock),
-                        hintText: 'Confirm your password..',
-                        labelText: 'Confirm Password',
-                        floatingLabelStyle: TextStyle(
-                          color: Colors.blue,
+                    const SizedBox(height: 25),
+                    IconButton(
+                      style: const ButtonStyle(
+                        backgroundColor: MaterialStatePropertyAll(
+                          Color.fromARGB(255, 22, 48, 196),
                         ),
-                        focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(
-                            color: Colors.blue,
+                        iconSize: MaterialStatePropertyAll(35),
+                        fixedSize: MaterialStatePropertyAll(
+                          Size(
+                            100,
+                            100,
                           ),
                         ),
-                        border: OutlineInputBorder(),
+                      ),
+                      onPressed: () async {
+                        final picker = ImagePicker();
+                        final pickedFile =
+                            await picker.pickImage(source: ImageSource.gallery);
+                        if (pickedFile != null) {
+                          setState(() {
+                            _file = File(pickedFile.path);
+                          });
+                        }
+                      },
+                      icon: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(_file == null ? Icons.upload : Icons.verified),
+                          Text(_file == null ? 'Upload' : 'Uploaded'),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 30),
                     ElevatedButton(
+                      onPressed: () {
+                        if (_formKey.currentState!.validate()) {
+                          if (!_terms) {
+                            showDialog(
+                              context: context,
+                              builder: (context) {
+                                return AlertDialog(
+                                  title: const Text(
+                                      'Accept the terms and conditions'),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      child: const Text('Close'),
+                                    ),
+                                    TextButton(
+                                      onPressed: () {
+                                        setState(() {
+                                          _terms = true;
+                                        });
+                                        Navigator.pop(context);
+                                      },
+                                      child: const Text('Accept'),
+                                    ),
+                                  ],
+                                );
+                              },
+                            );
+                          }
+                        }
+                      },
                       style: const ButtonStyle(
                         backgroundColor: MaterialStatePropertyAll(
-                            Color.fromARGB(255, 0, 23, 126)),
-                        fixedSize: MaterialStatePropertyAll(
-                          Size.fromWidth(200),
-                        ),
+                            Color.fromARGB(255, 0, 15, 83)),
                       ),
-                      onPressed: () => debugPrint('works'),
-                      child: const Center(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.upload,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                            SizedBox(width: 5),
-                            Text(
-                              'Upload picture',
-                              style: TextStyle(
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
+                      child: const Text(
+                        'Submit',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
+                    const SizedBox(height: 30),
                   ],
-                ),
-              ),
-              const SizedBox(height: 30),
-              ElevatedButton(
-                onPressed: () {
-                  debugPrint('works');
-                },
-                style: const ButtonStyle(
-                  backgroundColor:
-                      MaterialStatePropertyAll(Color.fromARGB(255, 0, 15, 83)),
-                ),
-                child: const Text(
-                  'Submit',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
                 ),
               ),
             ],
