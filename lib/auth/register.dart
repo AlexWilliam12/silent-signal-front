@@ -1,8 +1,13 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:silent_signal/consts/enchecao_de_linguica.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:silent_signal/consts/enchecao_de_linguica.dart';
+import 'package:silent_signal/services/auth_service.dart';
+import 'package:silent_signal/services/upload_service.dart';
+
+import '../main.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -18,6 +23,60 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _confirmController = TextEditingController();
   bool _terms = false;
   File? _file;
+
+  Future<void> _submitForm() async {
+    final service = AuthService();
+    final response = await service.register(
+      _usernameController.text,
+      _passwordController.text,
+    );
+    if (response['token'] == null) {
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              title: const Text('Error'),
+              content: Text(response['error']),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('close'),
+                ),
+              ],
+            );
+          },
+        );
+      }
+    } else {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('token', response['token']);
+      if (_file != null) {
+        await UploadService().uploadPicture(_file!);
+      }
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              title: const Text('Message'),
+              content: const Text('User registered successfully'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('ok'),
+                ),
+              ],
+            );
+          },
+        );
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const ChatApp()),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -243,6 +302,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 );
                               },
                             );
+                          } else {
+                            _submitForm();
                           }
                         }
                       },

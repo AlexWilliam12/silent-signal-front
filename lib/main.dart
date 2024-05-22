@@ -5,8 +5,12 @@ import 'package:silent_signal/app/profile.dart';
 import 'package:silent_signal/app/settings.dart';
 import 'package:silent_signal/auth/login.dart';
 import 'package:silent_signal/auth/register.dart';
+import 'package:silent_signal/services/auth_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  prefs.setString('host', '192.168.0.119:8080');
   runApp(const AppRunner());
 }
 
@@ -82,10 +86,9 @@ class ChatApp extends StatelessWidget {
         brightness: Brightness.dark,
       ),
       themeMode: ThemeMode.system,
-      initialRoute: "/chat",
+      initialRoute: "/app",
       routes: {
         "/app": (context) => const MainScreen(),
-        "/chat": (context) => const ChatRoom(),
         "/profile": (context) => const ProfileScreen(),
         "/settings": (context) => const SettingScreen(),
       },
@@ -120,6 +123,23 @@ class Auth extends StatelessWidget {
 
 Future<bool> checkToken() async {
   final pref = await SharedPreferences.getInstance();
-  final token = pref.get("token");
-  return token == null;
+  final token = pref.get('token') as String?;
+  final service = AuthService();
+  if (token == null) {
+    return false;
+  }
+  var response = await service.validateToken(token);
+  if (response['error'] != null) {
+    debugPrint(response['error']);
+    final hash = pref.get('hash') as String?;
+    if (hash == null) {
+      return false;
+    }
+    response = await service.validateHash(hash);
+    if (response['error'] != null) {
+      return false;
+    }
+    await pref.setString('token', response['token']);
+  }
+  return true;
 }
