@@ -37,7 +37,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           builder: (context) {
             return AlertDialog(
               title: const Text('Error'),
-              content: Text(response['error']),
+              content: Text(response['error'] as String),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
@@ -50,7 +50,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       }
     } else {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('token', response['token']);
+      await prefs.setString('token', response['token'] as String);
+      debugPrint(response['token']);
       if (_file != null) {
         await UploadService().uploadPicture(_file!);
       }
@@ -283,7 +284,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               builder: (context) {
                                 return AlertDialog(
                                   title: const Text(
-                                      'Accept the terms and conditions'),
+                                    'Accept the terms and conditions',
+                                  ),
                                   actions: [
                                     TextButton(
                                       onPressed: () => Navigator.pop(context),

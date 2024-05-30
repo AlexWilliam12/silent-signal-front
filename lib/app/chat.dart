@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:silent_signal/main.dart';
+import 'package:silent_signal/models/sensitive_user.dart';
 import 'package:silent_signal/services/user_service.dart';
 import 'package:silent_signal/services/websocket_service.dart';
 
@@ -11,7 +13,7 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-  final _service = UserService();
+  final service = UserService();
   final _channel = WebSocketService();
   final List<dynamic> _chats = [];
   final Map<String, dynamic> _lastMessages = {};
@@ -21,25 +23,28 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   void initState() {
-    fetchUser();
     super.initState();
   }
 
-  Future<void> fetchUser() async {
-    final response = await _service.fetchUserData();
-    if (response['error'] != null) {
-      debugPrint(response['error']);
-    } else {
-      final pref = await SharedPreferences.getInstance();
-      await pref.setString('hash', response['credentialsHash']);
-      setState(() {
-        _user = response['username'];
-        _chats.addAll(response['messages']);
-        _filterLast();
-      });
-    }
-    await initChannel();
+  Future<SensitiveUser?> fetchUser() async {
+    return await service.fetchUser();
   }
+
+  // Future<void> fetchUser() async {
+  //   final response = await _service.fetchUserData();
+  //   if (response['error'] != null) {
+  //     debugPrint(response['error']);
+  //   } else {
+  //     debugPrint(response.toString());
+  //     user =
+  //     final pref = await SharedPreferences.getInstance();
+  //     await pref.setString('hash', response['credentials_hash']);
+  //     setState(() {
+  //       _user = response['name'];
+  //       _filterLast();
+  //     });
+  //   }
+  // }
 
   Future<void> initChannel() async {
     final pref = await SharedPreferences.getInstance();
@@ -68,256 +73,282 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Silent Signal',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 25,
-            color: Colors.white,
-          ),
-        ),
-        toolbarHeight: 65,
-        backgroundColor: const Color.fromARGB(255, 0, 15, 83),
-        actions: [
-          Container(
-            margin: const EdgeInsets.only(
-              right: 15,
-            ),
-            child: GestureDetector(
-              onTap: () => Navigator.pushNamed(context, '/profile'),
-              child: CircleAvatar(
-                radius: 22,
-                backgroundColor: Colors.green,
-                child: Text(_user.isNotEmpty ? _user.substring(0, 1) : ''),
+    return FutureBuilder(
+      future: fetchUser(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const LoadScreen();
+        } else if (!snapshot.hasData) {
+          return const LoadScreen();
+        } else {
+          final user = snapshot.data!;
+          return Scaffold(
+            appBar: AppBar(
+              title: const Text(
+                'Silent Signal',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 25,
+                  color: Colors.white,
+                ),
               ),
-            ),
-          ),
-        ],
-      ),
-      body: _chats.isEmpty
-          ? const Center(child: Text('No chats available'))
-          : ListView.builder(
-              itemCount: _lastMessages.length,
-              itemBuilder: (context, index) {
-                String sender = _lastMessages.keys.elementAt(index);
-                var message = _lastMessages[sender];
-                return Container(
-                  decoration: const BoxDecoration(
-                    border: Border(
-                      bottom: BorderSide(
-                        width: 0.2,
-                        color: Colors.white,
-                      ),
+              toolbarHeight: 65,
+              backgroundColor: const Color.fromARGB(255, 0, 15, 83),
+              actions: [
+                Container(
+                  margin: const EdgeInsets.only(
+                    right: 15,
+                  ),
+                  child: GestureDetector(
+                    onTap: () => Navigator.pushNamed(context, '/profile'),
+                    child: CircleAvatar(
+                      radius: 22,
+                      backgroundColor: Colors.green,
+                      child: user.picture != null
+                          ? Image(
+                              image: NetworkImage(user.picture!),
+                              fit: BoxFit.cover,
+                            )
+                          : Text(user.name.substring(0, 1)),
                     ),
                   ),
-                  child: ListTile(
-                    leading: GestureDetector(
-                      onTap: () => debugPrint('profile'),
-                      child: CircleAvatar(
-                        radius: 25,
-                        child: message['senderPicture'].isNotEmpty
-                            ? Image.network(message['senderPicture'])
-                            : Text(message['sender'].substring(0, 1)),
-                      ),
-                    ),
-                    title: Text(
-                      message['sender'],
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    subtitle: Text(
-                      message['content'],
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 15,
-                      vertical: 5,
-                    ),
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) {
-                          var otherUser = _chats.firstWhere(
-                                  (element) => element['sender'] != _user)
-                              as Map<String, dynamic>;
-                          return Scaffold(
-                            appBar: AppBar(
-                              title: Row(
-                                children: [
-                                  GestureDetector(
-                                    onTap: () {},
-                                    child: CircleAvatar(
-                                      radius: 22,
-                                      backgroundColor: Colors.green,
-                                      child:
-                                          otherUser['senderPicture'].isNotEmpty
-                                              ? Image.network(
-                                                  otherUser['senderPicture'])
-                                              : Text(otherUser['sender']
-                                                  .substring(0, 1)),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 20),
-                                  SizedBox(
-                                    width: 250,
-                                    child: Text(
-                                      otherUser['sender'],
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 21,
-                                        color: Colors.white,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              toolbarHeight: 65,
-                              backgroundColor:
-                                  const Color.fromARGB(255, 0, 15, 83),
+                ),
+              ],
+            ),
+            body: _chats.isEmpty
+                ? const Center(child: Text('No chats available'))
+                : ListView.builder(
+                    itemCount: _lastMessages.length,
+                    itemBuilder: (context, index) {
+                      String sender = _lastMessages.keys.elementAt(index);
+                      var message = _lastMessages[sender];
+                      return Container(
+                        decoration: const BoxDecoration(
+                          border: Border(
+                            bottom: BorderSide(
+                              width: 0.2,
+                              color: Colors.white,
                             ),
-                            body: Column(
-                              children: [
-                                Expanded(
-                                  child: ListView.builder(
-                                    itemCount: _chats.length,
-                                    itemBuilder: (context, index) {
-                                      var element = _chats[index];
-                                      return ChatBubble(
-                                        type: element['type'],
-                                        message: element['content'],
-                                        isSentByMe:
-                                            element['sender'] == _user,
-                                      );
-                                    },
-                                  ),
-                                ),
-                                Container(
-                                  height: 90,
-                                  decoration: const BoxDecoration(
-                                    border: Border(
-                                      top: BorderSide(
-                                        width: 0.1,
-                                        color: Colors.grey,
-                                      ),
-                                    ),
-                                  ),
-                                  child: Center(
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
+                          ),
+                        ),
+                        child: ListTile(
+                          leading: GestureDetector(
+                            onTap: () => debugPrint('profile'),
+                            child: CircleAvatar(
+                              radius: 25,
+                              child: message['senderPicture'].isNotEmpty
+                                  ? Image.network(message['senderPicture'])
+                                  : Text(message['sender'].substring(0, 1)),
+                            ),
+                          ),
+                          title: Text(
+                            message['sender'],
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          subtitle: Text(
+                            message['content'],
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 15,
+                            vertical: 5,
+                          ),
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) {
+                                var otherUser = _chats.firstWhere(
+                                        (element) => element['sender'] != _user)
+                                    as Map<String, dynamic>;
+                                return Scaffold(
+                                  appBar: AppBar(
+                                    title: Row(
                                       children: [
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 15),
-                                          width: 300,
-                                          child: TextFormField(
-                                            controller: _controller,
-                                            autocorrect: true,
-                                            textCapitalization:
-                                                TextCapitalization.sentences,
-                                            decoration: const InputDecoration(
-                                              hintText: 'Send a message...',
-                                            ),
-                                            onChanged: (value) {
-                                              setState(() {
-                                                _isTyping = value.isNotEmpty;
-                                              });
-                                            },
+                                        GestureDetector(
+                                          onTap: () {},
+                                          child: CircleAvatar(
+                                            radius: 22,
+                                            backgroundColor: Colors.green,
+                                            child: otherUser['senderPicture']
+                                                    .isNotEmpty
+                                                ? Image.network(
+                                                    otherUser['senderPicture'])
+                                                : Text(otherUser['sender']
+                                                    .substring(0, 1)),
                                           ),
                                         ),
-                                        IconButton(
-                                          onPressed: () {
-                                            showModalBottomSheet(
-                                              context: context,
-                                              builder: (context) {
-                                                return Column(
-                                                  mainAxisSize:
-                                                      MainAxisSize.min,
-                                                  children: [
-                                                    ListTile(
-                                                      leading: const Icon(
-                                                          Icons.image),
-                                                      title:
-                                                          const Text('Image'),
-                                                      onTap: () {},
-                                                    ),
-                                                    ListTile(
-                                                      leading: const Icon(
-                                                          Icons.description),
-                                                      title: const Text(
-                                                          'Document'),
-                                                      onTap: () {},
-                                                    ),
-                                                    ListTile(
-                                                      leading: const Icon(Icons
-                                                          .enhanced_encryption),
-                                                      title: const Text(
-                                                          'Sensitive content'),
-                                                      onTap: () {},
-                                                    ),
-                                                  ],
-                                                );
-                                              },
-                                            );
-                                          },
-                                          icon: const Icon(Icons.attach_file),
-                                        ),
-                                        IconButton(
-                                          onPressed: () {
-                                            if (_isTyping) {
-                                              final message = {
-                                                'sender': _user,
-                                                'recipient':
-                                                    otherUser['sender'],
-                                                'type': 'text',
-                                                'content': _controller.text,
-                                              };
-                                              _channel
-                                                  .sendMessage(message);
-                                            }
-                                            _controller.clear();
-                                            setState(() {
-                                              _isTyping = false;
-                                              debugPrint(message);
-                                              _chats.add(message);
-                                            });
-                                          },
-                                          icon: Icon(_isTyping
-                                              ? Icons.send
-                                              : Icons.mic),
+                                        const SizedBox(width: 20),
+                                        SizedBox(
+                                          width: 250,
+                                          child: Text(
+                                            otherUser['sender'],
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 21,
+                                              color: Colors.white,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
                                         ),
                                       ],
                                     ),
+                                    toolbarHeight: 65,
+                                    backgroundColor:
+                                        const Color.fromARGB(255, 0, 15, 83),
                                   ),
-                                ),
-                              ],
+                                  body: Column(
+                                    children: [
+                                      Expanded(
+                                        child: ListView.builder(
+                                          itemCount: _chats.length,
+                                          itemBuilder: (context, index) {
+                                            var element = _chats[index];
+                                            return ChatBubble(
+                                              type: element['type'],
+                                              message: element['content'],
+                                              isSentByMe:
+                                                  element['sender'] == _user,
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                      Container(
+                                        height: 90,
+                                        decoration: const BoxDecoration(
+                                          border: Border(
+                                            top: BorderSide(
+                                              width: 0.1,
+                                              color: Colors.grey,
+                                            ),
+                                          ),
+                                        ),
+                                        child: Center(
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        horizontal: 15),
+                                                width: 300,
+                                                child: TextFormField(
+                                                  controller: _controller,
+                                                  autocorrect: true,
+                                                  textCapitalization:
+                                                      TextCapitalization
+                                                          .sentences,
+                                                  decoration:
+                                                      const InputDecoration(
+                                                    hintText:
+                                                        'Send a message...',
+                                                  ),
+                                                  onChanged: (value) {
+                                                    setState(() {
+                                                      _isTyping =
+                                                          value.isNotEmpty;
+                                                    });
+                                                  },
+                                                ),
+                                              ),
+                                              IconButton(
+                                                onPressed: () {
+                                                  showModalBottomSheet(
+                                                    context: context,
+                                                    builder: (context) {
+                                                      return Column(
+                                                        mainAxisSize:
+                                                            MainAxisSize.min,
+                                                        children: [
+                                                          ListTile(
+                                                            leading: const Icon(
+                                                                Icons.image),
+                                                            title: const Text(
+                                                                'Image'),
+                                                            onTap: () {},
+                                                          ),
+                                                          ListTile(
+                                                            leading: const Icon(
+                                                                Icons
+                                                                    .description),
+                                                            title: const Text(
+                                                                'Document'),
+                                                            onTap: () {},
+                                                          ),
+                                                          ListTile(
+                                                            leading: const Icon(
+                                                                Icons
+                                                                    .enhanced_encryption),
+                                                            title: const Text(
+                                                                'Sensitive content'),
+                                                            onTap: () {},
+                                                          ),
+                                                        ],
+                                                      );
+                                                    },
+                                                  );
+                                                },
+                                                icon: const Icon(
+                                                    Icons.attach_file),
+                                              ),
+                                              IconButton(
+                                                onPressed: () {
+                                                  if (_isTyping) {
+                                                    final message = {
+                                                      'sender': _user,
+                                                      'recipient':
+                                                          otherUser['sender'],
+                                                      'type': 'text',
+                                                      'content':
+                                                          _controller.text,
+                                                    };
+                                                    _channel
+                                                        .sendMessage(message);
+                                                  }
+                                                  _controller.clear();
+                                                  setState(() {
+                                                    _isTyping = false;
+                                                    debugPrint(message);
+                                                    _chats.add(message);
+                                                  });
+                                                },
+                                                icon: Icon(_isTyping
+                                                    ? Icons.send
+                                                    : Icons.mic),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
                             ),
-                          );
-                        },
-                      ),
-                    ),
+                          ),
+                        ),
+                      );
+                    },
                   ),
-                );
-              },
+            bottomNavigationBar: BottomNavigationBar(
+              items: const [
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.chat),
+                  label: 'chats',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.groups),
+                  label: 'groups',
+                ),
+              ],
             ),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.chat),
-            label: 'chats',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.groups),
-            label: 'groups',
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => debugPrint('works'),
-        child: const Icon(Icons.add),
-      ),
+            floatingActionButton: FloatingActionButton(
+              onPressed: () => debugPrint('works'),
+              child: const Icon(Icons.add),
+            ),
+          );
+        }
+      },
     );
   }
 }

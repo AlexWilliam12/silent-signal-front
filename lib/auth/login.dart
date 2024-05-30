@@ -28,7 +28,7 @@ class _LoginScreenState extends State<LoginScreen> {
           builder: (context) {
             return AlertDialog(
               title: const Text('Error'),
-              content: Text(response['error']),
+              content: Text(response['error']!),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
@@ -41,7 +41,7 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } else {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('token', response['token']);
+      await prefs.setString('token', response['token']!);
       if (mounted) {
         showDialog(
           context: context,

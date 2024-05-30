@@ -10,7 +10,7 @@ import 'package:silent_signal/services/auth_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SharedPreferences prefs = await SharedPreferences.getInstance();
-  prefs.setString('host', '192.168.0.119:8080');
+  prefs.setString('host', '192.168.0.117:8080');
   runApp(const AppRunner());
 }
 
@@ -137,9 +137,10 @@ Future<bool> checkToken() async {
     }
     response = await service.validateHash(hash);
     if (response['error'] != null) {
+      debugPrint(response['error']);
       return false;
     }
-    await pref.setString('token', response['token']);
+    await pref.setString('token', response['token'] as String);
   }
   return true;
 }
