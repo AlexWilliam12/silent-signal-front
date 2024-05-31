@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:silent_signal/app/chat.dart';
+import 'package:silent_signal/app/chats.dart';
 import 'package:silent_signal/app/profile.dart';
 import 'package:silent_signal/app/settings.dart';
 import 'package:silent_signal/auth/login.dart';
 import 'package:silent_signal/auth/register.dart';
 import 'package:silent_signal/services/auth_service.dart';
+import 'package:silent_signal/services/group_chat_service.dart';
+import 'package:silent_signal/services/private_chat_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SharedPreferences prefs = await SharedPreferences.getInstance();
-  prefs.setString('host', '192.168.0.117:8080');
+  prefs.setString('host', '192.168.0.141:8080');
   runApp(const AppRunner());
 }
 
@@ -75,23 +78,57 @@ class ChatApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primaryColor: const Color.fromARGB(255, 20, 122, 195),
-        brightness: Brightness.light,
+    return MultiProvider(
+      providers: [
+        // Provider<PrivateChatService>(
+        //   create: (_) {
+        //     final service = PrivateChatService();
+        //     service.connect();
+        //     return service;
+        //   },
+        //   dispose: (_, service) => service.dispose(),
+        // ),
+        ChangeNotifierProvider<PrivateChatService>(
+          create: (_) {
+            final service = PrivateChatService();
+            service.connect();
+            return service;
+          },
+        ),
+        ChangeNotifierProvider<GroupChatService>(
+          create: (_) {
+            final service = GroupChatService();
+            service.connect();
+            return service;
+          },
+        ),
+        // Provider<GroupChatService>(
+        //   create: (_) {
+        //     final service = GroupChatService();
+        //     service.connect();
+        //     return service;
+        //   },
+        //   dispose: (_, service) => service.dispose(),
+        // ),
+      ],
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          primaryColor: const Color.fromARGB(255, 20, 122, 195),
+          brightness: Brightness.light,
+        ),
+        darkTheme: ThemeData(
+          primaryColor: const Color.fromARGB(255, 5, 0, 64),
+          brightness: Brightness.dark,
+        ),
+        themeMode: ThemeMode.system,
+        initialRoute: "/chats",
+        routes: {
+          "/chats": (context) => const ChatListScreen(),
+          "/profile": (context) => const ProfileScreen(),
+          "/settings": (context) => const SettingScreen(),
+        },
       ),
-      darkTheme: ThemeData(
-        primaryColor: const Color.fromARGB(255, 5, 0, 64),
-        brightness: Brightness.dark,
-      ),
-      themeMode: ThemeMode.system,
-      initialRoute: "/app",
-      routes: {
-        "/app": (context) => const MainScreen(),
-        "/profile": (context) => const ProfileScreen(),
-        "/settings": (context) => const SettingScreen(),
-      },
     );
   }
 }
@@ -128,19 +165,18 @@ Future<bool> checkToken() async {
   if (token == null) {
     return false;
   }
-  var response = await service.validateToken(token);
-  if (response['error'] != null) {
-    debugPrint(response['error']);
-    final hash = pref.get('hash') as String?;
+  final isValid = await service.validateToken(token);
+  if (!isValid) {
+    final hash = pref.get('credentials_hash') as String?;
     if (hash == null) {
       return false;
     }
-    response = await service.validateHash(hash);
+    final response = await service.validateHash(hash);
     if (response['error'] != null) {
       debugPrint(response['error']);
       return false;
     }
-    await pref.setString('token', response['token'] as String);
+    await pref.setString('token', response['token']);
   }
   return true;
 }

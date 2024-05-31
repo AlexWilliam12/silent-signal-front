@@ -21,43 +21,41 @@ class _LoginScreenState extends State<LoginScreen> {
       _usernameController.text,
       _passwordController.text,
     );
-    if (response['token'] == null) {
-      if (mounted) {
-        showDialog(
-          context: context,
-          builder: (context) {
-            return AlertDialog(
-              title: const Text('Error'),
-              content: Text(response['error']!),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('close'),
-                ),
-              ],
-            );
-          },
-        );
-      }
+    if (response['token'] == null && mounted) {
+      showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: const Text('Error'),
+            content: Text(response['error']!),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('close'),
+              ),
+            ],
+          );
+        },
+      );
     } else {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('token', response['token']!);
+      await prefs.setString('token', response['token']);
       if (mounted) {
-        showDialog(
-          context: context,
-          builder: (context) {
-            return AlertDialog(
-              title: const Text('Message'),
-              content: const Text('User logged successfully'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('ok'),
-                ),
-              ],
-            );
-          },
-        );
+        // showDialog(
+        //   context: context,
+        //   builder: (context) {
+        //     return AlertDialog(
+        //       title: const Text('Message'),
+        //       content: const Text('User logged successfully'),
+        //       actions: [
+        //         TextButton(
+        //           onPressed: () => Navigator.pop(context),
+        //           child: const Text('ok'),
+        //         ),
+        //       ],
+        //     );
+        //   },
+        // );
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const ChatApp()),

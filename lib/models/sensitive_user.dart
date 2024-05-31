@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:silent_signal/models/group.dart';
 import 'package:silent_signal/models/user.dart';
 

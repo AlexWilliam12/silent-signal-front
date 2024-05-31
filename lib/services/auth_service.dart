@@ -62,7 +62,7 @@ class AuthService {
     }
   }
 
-  Future<Map<String, dynamic>> validateToken(String token) async {
+  Future<bool> validateToken(String token) async {
     try {
       SharedPreferences pref = await SharedPreferences.getInstance();
       String host = pref.get('host')! as String;
@@ -72,10 +72,10 @@ class AuthService {
           'Authorization': 'Bearer $token',
         },
       );
-      return response.statusCode == 200 ? {} : {'error': response.body};
+      return response.statusCode == 200;
     } catch (e) {
       debugPrint(e.toString());
-      return {'error': e.toString()};
+      return false;
     }
   }
 
