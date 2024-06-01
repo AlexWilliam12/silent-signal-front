@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:silent_signal/consts/enchecao_de_linguica.dart';
+import 'package:silent_signal/consts/terms_conditions.dart';
 import 'package:silent_signal/services/auth_service.dart';
 import 'package:silent_signal/services/upload_service.dart';
 
@@ -23,6 +23,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _confirmController = TextEditingController();
   bool _terms = false;
   File? _file;
+  bool _loadingFile = false;
 
   Future<void> _submitForm() async {
     final service = AuthService();
@@ -49,8 +50,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         );
       }
     } else {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('token', response['token'] as String);
+      final preferences = await SharedPreferences.getInstance();
+      await preferences.setString('token', response['token'] as String);
       debugPrint(response['token']);
       if (_file != null) {
         await UploadService().uploadPicture(_file!);
@@ -79,6 +80,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
+  void _uploadPicture() async {
+    setState(() {
+      _loadingFile = true;
+    });
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _file = File(pickedFile.path);
+      });
+    }
+    setState(() {
+      _loadingFile = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -95,11 +112,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
               ),
               const SizedBox(height: 15),
-              const Text(
-                'Register',
-                style: TextStyle(
-                  fontSize: 35,
-                  fontWeight: FontWeight.bold,
+              const SizedBox(
+                width: 250,
+                child: Text(
+                  "Let's connect to the network",
+                  style: TextStyle(
+                    fontSize: 30,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
               ),
               const SizedBox(height: 35),
@@ -120,14 +141,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               return null;
                             },
                             keyboardType: TextInputType.text,
-                            autofocus: true,
                             decoration: const InputDecoration(
                               prefixIcon: Icon(Icons.person),
                               hintText: 'Enter your username..',
                               labelText: 'Username',
-                              floatingLabelStyle: TextStyle(
-                                color: Colors.blue,
-                              ),
                               focusedBorder: OutlineInputBorder(
                                 borderSide: BorderSide(
                                   color: Colors.blue,
@@ -151,9 +168,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               prefixIcon: Icon(Icons.lock),
                               hintText: 'Enter your password..',
                               labelText: 'Password',
-                              floatingLabelStyle: TextStyle(
-                                color: Colors.blue,
-                              ),
                               focusedBorder: OutlineInputBorder(
                                 borderSide: BorderSide(
                                   color: Colors.blue,
@@ -179,9 +193,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               prefixIcon: Icon(Icons.lock),
                               hintText: 'Confirm your password..',
                               labelText: 'Confirm Password',
-                              floatingLabelStyle: TextStyle(
-                                color: Colors.blue,
-                              ),
                               focusedBorder: OutlineInputBorder(
                                 borderSide: BorderSide(
                                   color: Colors.blue,
@@ -195,7 +206,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                     const SizedBox(height: 25),
                     SizedBox(
-                      width: 300,
+                      width: 320,
                       child: CheckboxListTile(
                         value: _terms,
                         onChanged: (value) {
@@ -209,9 +220,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               context: context,
                               builder: (context) {
                                 return AlertDialog(
-                                  title: const Text('Termos e Condições'),
+                                  title: const Text(
+                                    'Terms and Conditions',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
                                   content: const SingleChildScrollView(
-                                    child: Text(blabla),
+                                    child: Text(
+                                      TERMS_AND_CONDITIONS,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
                                   ),
                                   actions: [
                                     TextButton(
@@ -233,10 +254,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             );
                           },
                           child: const Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Icon(Icons.info),
-                              Text('Terms and Conditions'),
+                              Icon(
+                                Icons.info,
+                              ),
+                              Text(
+                                'Terms and Conditions',
+                                style: TextStyle(
+                                  decoration: TextDecoration.underline,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 17,
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -245,34 +275,43 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     const SizedBox(height: 25),
                     IconButton(
                       style: const ButtonStyle(
-                        backgroundColor: MaterialStatePropertyAll(
+                        backgroundColor: WidgetStatePropertyAll(
                           Color.fromARGB(255, 22, 48, 196),
                         ),
-                        iconSize: MaterialStatePropertyAll(35),
-                        fixedSize: MaterialStatePropertyAll(
+                        iconSize: WidgetStatePropertyAll(35),
+                        fixedSize: WidgetStatePropertyAll(
                           Size(
                             100,
                             100,
                           ),
                         ),
                       ),
-                      onPressed: () async {
-                        final picker = ImagePicker();
-                        final pickedFile =
-                            await picker.pickImage(source: ImageSource.gallery);
-                        if (pickedFile != null) {
-                          setState(() {
-                            _file = File(pickedFile.path);
-                          });
-                        }
+                      onPressed: () {
+                        _uploadPicture();
                       },
-                      icon: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(_file == null ? Icons.upload : Icons.verified),
-                          Text(_file == null ? 'Upload' : 'Uploaded'),
-                        ],
-                      ),
+                      icon: !_loadingFile
+                          ? Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  _file == null ? Icons.upload : Icons.verified,
+                                  color: Colors.white,
+                                ),
+                                Text(
+                                  _file == null ? 'Upload' : 'Uploaded',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                              ],
+                            )
+                          : const Center(
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                              ),
+                            ),
                     ),
                     const SizedBox(height: 30),
                     ElevatedButton(
@@ -310,11 +349,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         }
                       },
                       style: const ButtonStyle(
-                        backgroundColor: MaterialStatePropertyAll(
-                            Color.fromARGB(255, 0, 15, 83)),
+                        backgroundColor: WidgetStatePropertyAll(
+                          Color.fromARGB(255, 0, 26, 143),
+                        ),
                       ),
                       child: const Text(
-                        'Submit',
+                        'Sign Up',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 20,

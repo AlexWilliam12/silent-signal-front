@@ -1,5 +1,7 @@
+import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:silent_signal/auth/register.dart';
 import 'package:silent_signal/main.dart';
 import 'package:silent_signal/services/auth_service.dart';
 
@@ -41,21 +43,6 @@ class _LoginScreenState extends State<LoginScreen> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('token', response['token']);
       if (mounted) {
-        // showDialog(
-        //   context: context,
-        //   builder: (context) {
-        //     return AlertDialog(
-        //       title: const Text('Message'),
-        //       content: const Text('User logged successfully'),
-        //       actions: [
-        //         TextButton(
-        //           onPressed: () => Navigator.pop(context),
-        //           child: const Text('ok'),
-        //         ),
-        //       ],
-        //     );
-        //   },
-        // );
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const ChatApp()),
@@ -80,11 +67,15 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               const SizedBox(height: 15),
-              const Text(
-                'Login',
-                style: TextStyle(
-                  fontSize: 35,
-                  fontWeight: FontWeight.bold,
+              const SizedBox(
+                width: 250,
+                child: Text(
+                  'Welcome back to Silent Signal',
+                  style: TextStyle(
+                    fontSize: 30,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
               ),
               const SizedBox(height: 35),
@@ -103,14 +94,10 @@ class _LoginScreenState extends State<LoginScreen> {
                           return null;
                         },
                         keyboardType: TextInputType.text,
-                        autofocus: true,
                         decoration: const InputDecoration(
                           prefixIcon: Icon(Icons.person),
                           hintText: 'Enter your username..',
                           labelText: 'Username',
-                          floatingLabelStyle: TextStyle(
-                            color: Colors.blue,
-                          ),
                           focusedBorder: OutlineInputBorder(
                             borderSide: BorderSide(
                               color: Colors.blue,
@@ -134,9 +121,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           prefixIcon: Icon(Icons.lock),
                           hintText: 'Enter your password..',
                           labelText: 'Password',
-                          floatingLabelStyle: TextStyle(
-                            color: Colors.blue,
-                          ),
                           focusedBorder: OutlineInputBorder(
                             borderSide: BorderSide(
                               color: Colors.blue,
@@ -149,7 +133,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 30),
+              const SizedBox(height: 35),
               ElevatedButton(
                 onPressed: () {
                   if (_formKey.currentState!.validate()) {
@@ -157,11 +141,12 @@ class _LoginScreenState extends State<LoginScreen> {
                   }
                 },
                 style: const ButtonStyle(
-                  backgroundColor:
-                      MaterialStatePropertyAll(Color.fromARGB(255, 0, 15, 83)),
+                  backgroundColor: WidgetStatePropertyAll(
+                    Color.fromARGB(255, 0, 26, 143),
+                  ),
                 ),
                 child: const Text(
-                  'Submit',
+                  'Sign In',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 20,
@@ -169,16 +154,31 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 15),
+              const SizedBox(height: 25),
               GestureDetector(
-                onTap: () => Navigator.of(context).pushNamed('/register'),
+                onTap: () => Navigator.of(context).push(
+                  PageRouteBuilder(
+                    pageBuilder: (context, animation, secondaryAnimation) {
+                      return const RegisterScreen();
+                    },
+                    transitionsBuilder:
+                        (context, animation, secondaryAnimation, child) {
+                      return FadeThroughTransition(
+                        animation: animation,
+                        secondaryAnimation: secondaryAnimation,
+                        child: child,
+                      );
+                    },
+                  ),
+                ),
                 child: const Text(
-                  'Do not have an account? Register now!',
+                  "Don't have an account? Register now!",
                   style: TextStyle(
                     decoration: TextDecoration.underline,
                     decorationColor: Color.fromARGB(255, 67, 170, 255),
                     color: Color.fromARGB(255, 67, 170, 255),
                     fontWeight: FontWeight.bold,
+                    fontSize: 15,
                   ),
                 ),
               ),
@@ -192,6 +192,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     decorationColor: Color.fromARGB(255, 67, 170, 255),
                     color: Color.fromARGB(255, 67, 170, 255),
                     fontWeight: FontWeight.bold,
+                    fontSize: 15,
                   ),
                 ),
               ),

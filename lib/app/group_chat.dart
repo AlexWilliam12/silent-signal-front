@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:silent_signal/models/sensitive_user.dart';
-import 'package:silent_signal/services/group_chat_service.dart';
+import 'package:silent_signal/providers/providers.dart';
 
 class GroupChatListScreen extends StatefulWidget {
-  final SensitiveUser user;
-  const GroupChatListScreen({super.key, required this.user});
+  const GroupChatListScreen({super.key});
 
   @override
   State<GroupChatListScreen> createState() => _GroupChatListScreenState();
@@ -14,13 +12,14 @@ class GroupChatListScreen extends StatefulWidget {
 class _GroupChatListScreenState extends State<GroupChatListScreen> {
   @override
   Widget build(BuildContext context) {
-    final service = Provider.of<GroupChatService>(context);
+    final service = Provider.of<GroupChatProvider>(context);
+    final user = Provider.of<UserProvider>(context).user;
 
     return StreamBuilder(
       stream: service.stream,
       builder: (context, snapshot) {
         if (service.messages.isEmpty) {
-          return const Center(child: Text('no messages available yet'));
+          return const Center(child: Text('No group messages available yet'));
         } else {
           return ListView.builder(
             // itemCount: messages.length,

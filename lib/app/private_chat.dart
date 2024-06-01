@@ -1,16 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:silent_signal/models/private_message.dart';
-import 'package:silent_signal/models/sensitive_user.dart';
-import 'package:silent_signal/services/private_chat_service.dart';
+import 'package:silent_signal/models/user.dart';
+import 'package:silent_signal/providers/providers.dart';
 
 class PrivateChatListScreen extends StatefulWidget {
-  final SensitiveUser user;
-
-  const PrivateChatListScreen({
-    super.key,
-    required this.user,
-  });
+  const PrivateChatListScreen({super.key});
 
   @override
   State<PrivateChatListScreen> createState() => _PrivateChatListScreenState();
@@ -19,13 +14,14 @@ class PrivateChatListScreen extends StatefulWidget {
 class _PrivateChatListScreenState extends State<PrivateChatListScreen> {
   @override
   Widget build(BuildContext context) {
-    final service = context.watch<PrivateChatService>();
+    final service = context.watch<PrivateChatProvider>();
+    final user = Provider.of<UserProvider>(context).user!;
 
     return StreamBuilder(
       stream: service.stream,
       builder: (context, snapshot) {
         if (service.messages.isEmpty) {
-          return const Center(child: Text('no messages available yet'));
+          return const Center(child: Text('No contact messages available yet'));
         } else {
           var messages = service.messages
               .map((json) => PrivateMessage.fromJson(json))
@@ -33,7 +29,7 @@ class _PrivateChatListScreenState extends State<PrivateChatListScreen> {
 
           final lastRecipientMessages = <String, PrivateMessage>{};
           for (final message in messages) {
-            if (message.sender.name != widget.user.name) {
+            if (message.sender.name != user.name) {
               if (lastRecipientMessages.containsKey(message.sender.name)) {
                 final lastMessage = lastRecipientMessages[message.sender.name];
                 if (message.createdAt.isAfter(lastMessage!.createdAt)) {
@@ -46,7 +42,7 @@ class _PrivateChatListScreenState extends State<PrivateChatListScreen> {
           }
           final lastSenderMessages = <String, PrivateMessage>{};
           for (final message in messages) {
-            if (message.sender.name == widget.user.name) {
+            if (message.sender.name == user.name) {
               if (lastSenderMessages.containsKey(message.sender.name)) {
                 final lastMessage = lastSenderMessages[message.sender.name];
                 if (message.createdAt.isAfter(lastMessage!.createdAt)) {
@@ -128,7 +124,9 @@ class _PrivateChatListScreenState extends State<PrivateChatListScreen> {
                     context,
                     MaterialPageRoute(
                       builder: (context) => PrivateChatScreen(
-                        user: widget.user,
+                        contact: message.sender.name != user.name
+                            ? message.recipient
+                            : message.sender,
                       ),
                     ),
                   ),
@@ -143,8 +141,8 @@ class _PrivateChatListScreenState extends State<PrivateChatListScreen> {
 }
 
 class PrivateChatScreen extends StatefulWidget {
-  final SensitiveUser user;
-  const PrivateChatScreen({super.key, required this.user});
+  final User contact;
+  const PrivateChatScreen({super.key, required this.contact});
 
   @override
   State<PrivateChatScreen> createState() => _PrivateChatScreenState();
@@ -156,7 +154,8 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final service = Provider.of<PrivateChatService>(context);
+    final service = Provider.of<PrivateChatProvider>(context);
+    final user = Provider.of<UserProvider>(context).user!;
     return StreamBuilder(
       stream: service.stream,
       builder: (context, snapshot) {
@@ -166,24 +165,11 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
           final messages = service.messages
               .map((json) => PrivateMessage.fromJson(json))
               .map((message) {
-            if (message.sender.name == widget.user.name ||
-                message.recipient.name == widget.user.name) {
+            if (message.sender.name == user.name ||
+                message.recipient.name == user.name) {
               return message;
             }
           }).toList();
-          final otherUser = messages
-              .map((message) {
-                final sender = message!.sender;
-                if (sender.name != widget.user.name) {
-                  return message.sender;
-                }
-                final recipient = message.recipient;
-                if (recipient.name != widget.user.name) {
-                  return message.recipient;
-                }
-              })
-              .toList()
-              .first;
           return Scaffold(
             appBar: AppBar(
               title: Row(
@@ -193,16 +179,16 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                     child: CircleAvatar(
                       radius: 22,
                       backgroundColor: Colors.green,
-                      child: otherUser!.picture != null
-                          ? Image.network(otherUser.picture!)
-                          : Text(otherUser.name.substring(0, 1)),
+                      child: widget.contact.picture != null
+                          ? Image.network(widget.contact.picture!)
+                          : Text(widget.contact.name.substring(0, 1)),
                     ),
                   ),
                   const SizedBox(width: 20),
                   SizedBox(
                     width: 250,
                     child: Text(
-                      otherUser.name,
+                      widget.contact.name,
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 21,
@@ -226,7 +212,7 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                       return ChatBubble(
                         type: message!.type,
                         message: message.content,
-                        isSentByMe: message.sender.name == widget.user.name,
+                        isSentByMe: message.sender.name == user.name,
                       );
                     },
                   ),
@@ -297,8 +283,8 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                           onPressed: () {
                             if (_isTyping) {
                               final message = {
-                                'sender': widget.user,
-                                'recipient': otherUser.name,
+                                'sender': user,
+                                'recipient': widget.contact.name,
                                 'type': 'text',
                                 'content': _controller.text,
                               };

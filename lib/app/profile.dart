@@ -2,6 +2,9 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
+import 'package:silent_signal/providers/providers.dart';
+import 'package:silent_signal/services/upload_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -11,10 +14,12 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  File? _file;
-
   @override
   Widget build(BuildContext context) {
+    final provider = Provider.of<UserProvider>(context);
+    final user = provider.user!;
+    final theme = Theme.of(context);
+
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: 65,
@@ -23,52 +28,60 @@ class _ProfileScreenState extends State<ProfileScreen> {
           'Profile',
           style: TextStyle(
             fontWeight: FontWeight.bold,
+            color: Colors.white,
           ),
         ),
-        actions: [
-          IconButton(
-            onPressed: () => Navigator.pushNamed(
-              context,
-              '/settings',
-            ),
-            icon: const Icon(Icons.settings),
-          ),
-        ],
+        leading: IconButton(
+          onPressed: () => Navigator.of(context).pop(),
+          icon: const Icon(Icons.arrow_back),
+          color: Colors.white,
+        ),
       ),
       body: Column(
         children: [
-          Container(
+          SizedBox(
             width: MediaQuery.of(context).size.width,
             height: 300,
-            decoration: const BoxDecoration(
-              color: Colors.white,
-            ),
-            child: Image(
-              image: const AssetImage('assets/images/spy.jpeg'),
-              width: MediaQuery.of(context).size.width,
-              height: 300,
+            child: Center(
+              child: CircleAvatar(
+                radius: 111,
+                backgroundColor: theme.brightness == Brightness.light
+                    ? Colors.black
+                    : Colors.white,
+                child: user.picture != null
+                    ? CircleAvatar(
+                        radius: 110,
+                        backgroundImage: NetworkImage(user.picture!),
+                      )
+                    : CircleAvatar(
+                        radius: 50,
+                        child: Text(user.name.substring(0, 1)),
+                      ),
+              ),
             ),
           ),
-          const SizedBox(height: 20),
-          const Text(
-            'Joe Higashi',
-            style: TextStyle(
+          Text(
+            user.name,
+            style: const TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 30,
             ),
+            overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 30),
+          const SizedBox(height: 20),
           SizedBox(
             width: 200,
             child: ElevatedButton(
               onPressed: () async {
                 final picker = ImagePicker();
-                final pickedFile =
-                    await picker.pickImage(source: ImageSource.gallery);
+                final pickedFile = await picker.pickImage(
+                  source: ImageSource.gallery,
+                );
                 if (pickedFile != null) {
-                  setState(() {
-                    _file = File(pickedFile.path);
-                  });
+                  final file = File(pickedFile.path);
+                  final service = UploadService();
+                  await service.updatePicture(file);
+                  await provider.provide();
                 }
               },
               child: const Row(

@@ -37,4 +37,27 @@ class UploadService {
       debugPrint(await response.stream.bytesToString());
     }
   }
+
+  Future<void> updatePicture(File file) async {
+    final pref = await SharedPreferences.getInstance();
+    final host = pref.get('host');
+    final token = pref.get('token');
+    final request = http.MultipartRequest(
+      'PUT',
+      Uri.parse('http://$host/upload/user/picture'),
+    );
+    final type = lookupMimeType(file.path) ?? 'application/octet-stream';
+    request.files.add(
+      await http.MultipartFile.fromPath(
+        'file',
+        file.path,
+        contentType: MediaType.parse(type),
+      ),
+    );
+    request.headers['Authorization'] = 'Bearer $token';
+    final response = await request.send();
+    if (response.statusCode != 200) {
+      debugPrint(await response.stream.bytesToString());
+    }
+  }
 }

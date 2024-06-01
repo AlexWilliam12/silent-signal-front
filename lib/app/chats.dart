@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:silent_signal/app/contact.dart';
 import 'package:silent_signal/app/group_chat.dart';
 import 'package:silent_signal/app/private_chat.dart';
-import 'package:silent_signal/models/sensitive_user.dart';
-import 'package:silent_signal/services/user_service.dart';
+import 'package:silent_signal/app/profile.dart';
+import 'package:silent_signal/app/settings.dart';
+import 'package:silent_signal/main.dart';
+import 'package:silent_signal/providers/providers.dart';
 
 class ChatListScreen extends StatefulWidget {
   const ChatListScreen({super.key});
@@ -13,73 +18,30 @@ class ChatListScreen extends StatefulWidget {
 
 class _ChatListScreenState extends State<ChatListScreen> {
   int _index = 0;
+  final _controller = PageController();
 
-  Future<SensitiveUser?> fetchUser() async {
-    return await UserService().fetchUser();
-  }
-
-  Widget renderBody(SensitiveUser user) {
-    if (_index == 0) {
-      return PrivateChatListScreen(user: user);
-    } else if (_index == 1) {
-      return GroupChatListScreen(user: user);
-    } else {
-      return const Placeholder();
+  Future<void> _logout() async {
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.remove('token');
+    await preferences.remove('hash');
+    if (mounted) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(
+          builder: (context) => const Auth(),
+        ),
+        (route) => false,
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder(
-      future: fetchUser(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting ||
-            !snapshot.hasData) {
-          return Scaffold(
-            appBar: AppBar(
-              title: const Text(
-                'Silent Signal',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 25,
-                  color: Colors.white,
-                ),
-              ),
-              toolbarHeight: 65,
-              backgroundColor: const Color.fromARGB(255, 0, 15, 83),
-              actions: [
-                Container(
-                  margin: const EdgeInsets.only(
-                    right: 15,
-                  ),
-                  child: const CircleAvatar(
-                    radius: 22,
-                    backgroundColor: Colors.green,
-                    child: Text('U'),
-                  ),
-                ),
-              ],
-            ),
-            body: const Center(child: CircularProgressIndicator()),
-            bottomNavigationBar: BottomNavigationBar(
-              items: const [
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.chat),
-                  label: 'chats',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.groups),
-                  label: 'groups',
-                ),
-              ],
-            ),
-            floatingActionButton: FloatingActionButton(
-              onPressed: () => debugPrint('works'),
-              child: const Icon(Icons.add),
-            ),
-          );
+    return Consumer<UserProvider>(
+      builder: (context, value, child) {
+        final user = value.user;
+        if (user == null) {
+          return const LoadScreen();
         } else {
-          final user = snapshot.data!;
           return Scaffold(
             appBar: AppBar(
               title: const Text(
@@ -93,31 +55,111 @@ class _ChatListScreenState extends State<ChatListScreen> {
               toolbarHeight: 65,
               backgroundColor: const Color.fromARGB(255, 0, 15, 83),
               actions: [
-                Container(
-                  margin: const EdgeInsets.only(
-                    right: 15,
-                  ),
-                  child: GestureDetector(
-                    onTap: () => Navigator.pushNamed(context, '/profile'),
-                    child: CircleAvatar(
-                      radius: 22,
-                      backgroundColor: Colors.green,
-                      child: user.picture != null
-                          ? Image.network(user.picture!)
-                          : Text(user.name.substring(0, 1)),
+                Builder(
+                  builder: (context) {
+                    return IconButton(
+                      onPressed: () {
+                        Scaffold.of(context).openEndDrawer();
+                      },
+                      icon: const Icon(
+                        Icons.more_vert,
+                        color: Colors.white,
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+            endDrawer: Drawer(
+              child: ListView(
+                // padding: EdgeInsets.zero,
+                children: [
+                  const DrawerHeader(
+                    decoration: BoxDecoration(
+                      color: Color.fromARGB(255, 0, 15, 83),
+                    ),
+                    child: Text(
+                      'Settings Menu',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                  ListTile(
+                    leading: const Icon(
+                      Icons.account_circle,
+                      size: 30,
+                    ),
+                    title: const Text(
+                      'Profile',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ProfileScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(
+                      Icons.settings,
+                      size: 30,
+                    ),
+                    title: const Text(
+                      'Settings',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => SettingScreen(user: user),
+                        ),
+                      );
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(
+                      Icons.logout,
+                      size: 30,
+                    ),
+                    title: const Text(
+                      'Sign Out',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    onTap: () {
+                      _logout();
+                    },
+                  ),
+                ],
+              ),
             ),
-            body: renderBody(user),
-            bottomNavigationBar: BottomNavigationBar(
-              currentIndex: _index,
-              onTap: (index) {
+            body: PageView(
+              controller: _controller,
+              onPageChanged: (index) {
                 setState(() {
                   _index = index;
                 });
               },
+              children: const [
+                PrivateChatListScreen(),
+                GroupChatListScreen(),
+              ],
+            ),
+            bottomNavigationBar: BottomNavigationBar(
+              currentIndex: _index,
+              onTap: (index) => _controller.jumpToPage(index),
               items: const [
                 BottomNavigationBarItem(
                   icon: Icon(Icons.chat),
@@ -130,8 +172,12 @@ class _ChatListScreenState extends State<ChatListScreen> {
               ],
             ),
             floatingActionButton: FloatingActionButton(
-              onPressed: () => debugPrint('works'),
-              child: const Icon(Icons.add),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const ContactScreen(),
+                ),
+              ),
+              child: const Icon(Icons.contacts),
             ),
           );
         }

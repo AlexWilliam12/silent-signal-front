@@ -1,0 +1,1 @@
+enum ChatMode { PRIVATE, GROUP }

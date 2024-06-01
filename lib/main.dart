@@ -5,10 +5,9 @@ import 'package:silent_signal/app/chats.dart';
 import 'package:silent_signal/app/profile.dart';
 import 'package:silent_signal/app/settings.dart';
 import 'package:silent_signal/auth/login.dart';
-import 'package:silent_signal/auth/register.dart';
+import 'package:silent_signal/consts/chat_mode.dart';
+import 'package:silent_signal/providers/providers.dart';
 import 'package:silent_signal/services/auth_service.dart';
-import 'package:silent_signal/services/group_chat_service.dart';
-import 'package:silent_signal/services/private_chat_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -80,36 +79,27 @@ class ChatApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        // Provider<PrivateChatService>(
-        //   create: (_) {
-        //     final service = PrivateChatService();
-        //     service.connect();
-        //     return service;
-        //   },
-        //   dispose: (_, service) => service.dispose(),
-        // ),
-        ChangeNotifierProvider<PrivateChatService>(
+        ChangeNotifierProvider<UserProvider>(
           create: (_) {
-            final service = PrivateChatService();
-            service.connect();
+            final provider = UserProvider();
+            provider.provide();
+            return provider;
+          },
+        ),
+        ChangeNotifierProvider<PrivateChatProvider>(
+          create: (_) {
+            final service = PrivateChatProvider();
+            service.connect(ChatMode.PRIVATE);
             return service;
           },
         ),
-        ChangeNotifierProvider<GroupChatService>(
+        ChangeNotifierProvider<GroupChatProvider>(
           create: (_) {
-            final service = GroupChatService();
-            service.connect();
+            final service = GroupChatProvider();
+            service.connect(ChatMode.GROUP);
             return service;
           },
         ),
-        // Provider<GroupChatService>(
-        //   create: (_) {
-        //     final service = GroupChatService();
-        //     service.connect();
-        //     return service;
-        //   },
-        //   dispose: (_, service) => service.dispose(),
-        // ),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
@@ -122,12 +112,7 @@ class ChatApp extends StatelessWidget {
           brightness: Brightness.dark,
         ),
         themeMode: ThemeMode.system,
-        initialRoute: "/chats",
-        routes: {
-          "/chats": (context) => const ChatListScreen(),
-          "/profile": (context) => const ProfileScreen(),
-          "/settings": (context) => const SettingScreen(),
-        },
+        home: const ChatListScreen(),
       ),
     );
   }
@@ -149,11 +134,7 @@ class Auth extends StatelessWidget {
         brightness: Brightness.dark,
       ),
       themeMode: ThemeMode.system,
-      initialRoute: "/login",
-      routes: {
-        "/login": (context) => const LoginScreen(),
-        "/register": (context) => const RegisterScreen(),
-      },
+      home: const LoginScreen(),
     );
   }
 }

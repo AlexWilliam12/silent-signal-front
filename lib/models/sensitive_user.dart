@@ -7,6 +7,7 @@ class SensitiveUser {
   final String hash;
   final String? picture;
   final DateTime createdAt;
+  final String? temporaryMessageInterval;
   final createdGroups = <Group>[];
   final participateGroups = <Group>[];
   final contacts = <User>[];
@@ -17,6 +18,7 @@ class SensitiveUser {
     required this.hash,
     required this.picture,
     required this.createdAt,
+    required this.temporaryMessageInterval,
   });
 
   factory SensitiveUser.fromJson(Map<String, dynamic> json) {
@@ -26,6 +28,7 @@ class SensitiveUser {
       hash: json['credentials_hash'],
       picture: json['picture'],
       createdAt: DateTime.parse(json['created_at']),
+      temporaryMessageInterval: json['time'],
     );
   }
 
@@ -36,6 +39,7 @@ class SensitiveUser {
       'credentials_hash': hash,
       'picture': picture,
       'created_at': createdAt.toIso8601String(),
+      'time': temporaryMessageInterval,
     };
   }
 }
