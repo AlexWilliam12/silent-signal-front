@@ -9,7 +9,7 @@ import 'package:silent_signal/consts/chat_mode.dart';
 abstract class WebsocketService with ChangeNotifier {
   final _controller = StreamController.broadcast();
   WebSocket? _socket;
-  List _messages = [];
+  final List _messages = [];
 
   Stream get stream => _controller.stream;
   List get messages => _messages;
@@ -26,12 +26,16 @@ abstract class WebsocketService with ChangeNotifier {
     _socket!.listen((content) {
       final decodedContent = jsonDecode(content);
       if (decodedContent is List) {
-        _messages = decodedContent;
+        for (var element in decodedContent) {
+          _messages.add(element);
+          _controller.add(messages.length);
+          notifyListeners();
+        }
       } else {
         _messages.add(decodedContent);
+        _controller.add(messages.length);
+        notifyListeners();
       }
-      _controller.add(decodedContent);
-      notifyListeners();
     });
   }
 

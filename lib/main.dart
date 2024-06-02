@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:silent_signal/app/chats.dart';
-import 'package:silent_signal/app/profile.dart';
-import 'package:silent_signal/app/settings.dart';
 import 'package:silent_signal/auth/login.dart';
 import 'package:silent_signal/consts/chat_mode.dart';
 import 'package:silent_signal/providers/providers.dart';
@@ -87,18 +85,10 @@ class ChatApp extends StatelessWidget {
           },
         ),
         ChangeNotifierProvider<PrivateChatProvider>(
-          create: (_) {
-            final service = PrivateChatProvider();
-            service.connect(ChatMode.PRIVATE);
-            return service;
-          },
+          create: (_) => PrivateChatProvider()..connect(ChatMode.PRIVATE),
         ),
         ChangeNotifierProvider<GroupChatProvider>(
-          create: (_) {
-            final service = GroupChatProvider();
-            service.connect(ChatMode.GROUP);
-            return service;
-          },
+          create: (_) => GroupChatProvider()..connect(ChatMode.GROUP),
         ),
       ],
       child: MaterialApp(

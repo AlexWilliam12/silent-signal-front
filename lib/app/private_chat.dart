@@ -1,8 +1,17 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:mime/mime.dart';
 import 'package:provider/provider.dart';
+import 'package:silent_signal/app/camera.dart';
 import 'package:silent_signal/models/private_message.dart';
+import 'package:silent_signal/models/sensitive_user.dart';
 import 'package:silent_signal/models/user.dart';
 import 'package:silent_signal/providers/providers.dart';
+import 'package:silent_signal/services/upload_service.dart';
+import 'package:silent_signal/services/websocket_service.dart';
+import 'package:http/http.dart' as http;
 
 class PrivateChatListScreen extends StatefulWidget {
   const PrivateChatListScreen({super.key});
@@ -14,7 +23,7 @@ class PrivateChatListScreen extends StatefulWidget {
 class _PrivateChatListScreenState extends State<PrivateChatListScreen> {
   @override
   Widget build(BuildContext context) {
-    final service = context.watch<PrivateChatProvider>();
+    final service = Provider.of<PrivateChatProvider>(context, listen: false);
     final user = Provider.of<UserProvider>(context).user!;
 
     return StreamBuilder(
@@ -27,64 +36,26 @@ class _PrivateChatListScreenState extends State<PrivateChatListScreen> {
               .map((json) => PrivateMessage.fromJson(json))
               .toList();
 
-          final lastRecipientMessages = <String, PrivateMessage>{};
-          for (final message in messages) {
-            if (message.sender.name != user.name) {
-              if (lastRecipientMessages.containsKey(message.sender.name)) {
-                final lastMessage = lastRecipientMessages[message.sender.name];
-                if (message.createdAt.isAfter(lastMessage!.createdAt)) {
-                  lastRecipientMessages[message.sender.name] = message;
-                }
-              } else {
-                lastRecipientMessages[message.sender.name] = message;
-              }
-            }
-          }
-          final lastSenderMessages = <String, PrivateMessage>{};
-          for (final message in messages) {
+          final lastMessages = <String, PrivateMessage>{};
+          for (var message in messages) {
+            User otherUser;
             if (message.sender.name == user.name) {
-              if (lastSenderMessages.containsKey(message.sender.name)) {
-                final lastMessage = lastSenderMessages[message.sender.name];
-                if (message.createdAt.isAfter(lastMessage!.createdAt)) {
-                  lastSenderMessages[message.sender.name] = message;
-                }
-              } else {
-                lastSenderMessages[message.sender.name] = message;
-              }
+              otherUser = message.recipient;
+            } else if (message.recipient.name == user.name) {
+              otherUser = message.sender;
+            } else {
+              continue;
             }
-          }
-          final recipientMessages = lastRecipientMessages.values.toList();
-          final senderMessages = lastSenderMessages.values.toList();
 
-          messages.clear();
-          if (senderMessages.isEmpty) {
-            messages.addAll(recipientMessages);
-          } else if (recipientMessages.isEmpty) {
-            messages.addAll(senderMessages);
-          } else {
-            for (var recipientMessage in recipientMessages) {
-              for (var senderMessage in senderMessages) {
-                final sender = senderMessage.sender.name;
-                final recipient = recipientMessage.recipient.name;
-                if (sender == recipient) {
-                  if (senderMessage.createdAt
-                      .isAfter(recipientMessage.createdAt)) {
-                    messages.add(
-                      PrivateMessage(
-                        type: senderMessage.type,
-                        content: 'You: ${senderMessage.content}',
-                        sender: recipientMessage.sender,
-                        recipient: senderMessage.recipient,
-                        createdAt: senderMessage.createdAt,
-                      ),
-                    );
-                  } else {
-                    messages.add(recipientMessage);
-                  }
-                }
-              }
+            if (!lastMessages.containsKey(otherUser.name) ||
+                lastMessages[otherUser.name]!
+                    .createdAt
+                    .isBefore(message.createdAt)) {
+              lastMessages[otherUser.name] = message;
             }
           }
+
+          messages = lastMessages.values.toList();
           return ListView.builder(
             itemCount: messages.length,
             itemBuilder: (context, index) {
@@ -93,27 +64,84 @@ class _PrivateChatListScreenState extends State<PrivateChatListScreen> {
                 decoration: const BoxDecoration(
                   border: Border(
                     bottom: BorderSide(
+                      color: Colors.grey,
                       width: 0.2,
-                      color: Colors.white,
                     ),
                   ),
                 ),
                 child: ListTile(
-                  leading: GestureDetector(
-                    onTap: () => debugPrint('profile'),
-                    child: CircleAvatar(
-                      radius: 25,
-                      child: message.sender.picture != null
-                          ? Image.network(message.sender.picture!)
-                          : Text(message.sender.name.substring(0, 1)),
+                  leading: message.sender.name == user.name
+                      ? message.recipient.picture != null
+                          ? CircleAvatar(
+                              radius: 25,
+                              backgroundColor: const Color.fromARGB(
+                                255,
+                                76,
+                                78,
+                                175,
+                              ),
+                              backgroundImage: NetworkImage(
+                                message.recipient.picture!,
+                              ),
+                            )
+                          : CircleAvatar(
+                              radius: 25,
+                              backgroundColor: const Color.fromARGB(
+                                255,
+                                76,
+                                78,
+                                175,
+                              ),
+                              child: Text(
+                                message.recipient.name.substring(0, 1),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            )
+                      : message.sender.picture != null
+                          ? CircleAvatar(
+                              radius: 25,
+                              backgroundColor: const Color.fromARGB(
+                                255,
+                                76,
+                                78,
+                                175,
+                              ),
+                              backgroundImage: NetworkImage(
+                                message.sender.picture!,
+                              ),
+                            )
+                          : CircleAvatar(
+                              radius: 25,
+                              backgroundColor: const Color.fromARGB(
+                                255,
+                                76,
+                                78,
+                                175,
+                              ),
+                              child: Text(
+                                message.sender.name.substring(0, 1),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                  title: Text(
+                    message.sender.name == user.name
+                        ? message.recipient.name
+                        : message.sender.name,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                  title: Text(
-                    message.sender.name,
-                    overflow: TextOverflow.ellipsis,
-                  ),
                   subtitle: Text(
-                    message.content,
+                    message.sender.name == user.name
+                        ? 'You: ${message.content}'
+                        : message.content,
                     overflow: TextOverflow.ellipsis,
                   ),
                   contentPadding: const EdgeInsets.symmetric(
@@ -125,8 +153,8 @@ class _PrivateChatListScreenState extends State<PrivateChatListScreen> {
                     MaterialPageRoute(
                       builder: (context) => PrivateChatScreen(
                         contact: message.sender.name != user.name
-                            ? message.recipient
-                            : message.sender,
+                            ? message.sender
+                            : message.recipient,
                       ),
                     ),
                   ),
@@ -149,8 +177,57 @@ class PrivateChatScreen extends StatefulWidget {
 }
 
 class _PrivateChatScreenState extends State<PrivateChatScreen> {
-  bool _isTyping = false;
-  final _controller = TextEditingController();
+  bool isTyping = false;
+  final controller = TextEditingController();
+
+  Future<void> sendPhoto(WebsocketService channel, SensitiveUser user) async {
+    final file = await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const CameraScreen(),
+      ),
+    ) as XFile?;
+    if (mounted) {
+      Navigator.of(context).pop();
+    }
+    if (file != null) {
+      final service = UploadService();
+      final response = await service.uploadPrivateChatFile(
+        File(file.path),
+        widget.contact.name,
+      );
+      if (response['location'] != null) {
+        channel.sendMessage({
+          'sender': user.name,
+          'recipient': widget.contact.name,
+          'type': lookupMimeType(file.path) ?? 'application/octet-stream',
+          'content': response['location'],
+        });
+      }
+    }
+  }
+
+  Future<void> sendImage(WebsocketService channel, SensitiveUser user) async {
+    final picker = ImagePicker();
+    final file = await picker.pickImage(source: ImageSource.gallery);
+    if (file != null) {
+      final service = UploadService();
+      final response = await service.uploadPrivateChatFile(
+        File(file.path),
+        widget.contact.name,
+      );
+      if (response['location'] != null) {
+        channel.sendMessage({
+          'sender': user.name,
+          'recipient': widget.contact.name,
+          'type': lookupMimeType(file.path) ?? 'application/octet-stream',
+          'content': response['location'],
+        });
+      }
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -164,25 +241,48 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
         } else {
           final messages = service.messages
               .map((json) => PrivateMessage.fromJson(json))
-              .map((message) {
-            if (message.sender.name == user.name ||
-                message.recipient.name == user.name) {
-              return message;
-            }
-          }).toList();
+              .where((message) =>
+                  (message.sender.name == user.name &&
+                      message.recipient.name == widget.contact.name) ||
+                  (message.recipient.name == user.name &&
+                      message.sender.name == widget.contact.name))
+              .toList();
           return Scaffold(
             appBar: AppBar(
               title: Row(
                 children: [
-                  GestureDetector(
-                    onTap: () {},
-                    child: CircleAvatar(
-                      radius: 22,
-                      backgroundColor: Colors.green,
-                      child: widget.contact.picture != null
-                          ? Image.network(widget.contact.picture!)
-                          : Text(widget.contact.name.substring(0, 1)),
-                    ),
+                  CircleAvatar(
+                    radius: 22,
+                    backgroundColor: Colors.green,
+                    child: widget.contact.picture != null
+                        ? CircleAvatar(
+                            radius: 25,
+                            backgroundColor: const Color.fromARGB(
+                              255,
+                              76,
+                              78,
+                              175,
+                            ),
+                            backgroundImage: NetworkImage(
+                              widget.contact.picture!,
+                            ),
+                          )
+                        : CircleAvatar(
+                            radius: 25,
+                            backgroundColor: const Color.fromARGB(
+                              255,
+                              76,
+                              78,
+                              175,
+                            ),
+                            child: Text(
+                              widget.contact.name.substring(0, 1),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
                   ),
                   const SizedBox(width: 20),
                   SizedBox(
@@ -201,6 +301,13 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
               ),
               toolbarHeight: 65,
               backgroundColor: const Color.fromARGB(255, 0, 15, 83),
+              leading: IconButton(
+                onPressed: () => Navigator.of(context).pop(),
+                icon: const Icon(
+                  Icons.arrow_back,
+                  color: Colors.white,
+                ),
+              ),
             ),
             body: Column(
               children: [
@@ -210,7 +317,7 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                     itemBuilder: (context, index) {
                       final message = messages[index];
                       return ChatBubble(
-                        type: message!.type,
+                        type: message.type,
                         message: message.content,
                         isSentByMe: message.sender.name == user.name,
                       );
@@ -222,7 +329,7 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                   decoration: const BoxDecoration(
                     border: Border(
                       top: BorderSide(
-                        width: 0.1,
+                        width: 0.2,
                         color: Colors.grey,
                       ),
                     ),
@@ -234,8 +341,8 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 15),
                           width: 300,
-                          child: TextFormField(
-                            controller: _controller,
+                          child: TextField(
+                            controller: controller,
                             autocorrect: true,
                             textCapitalization: TextCapitalization.sentences,
                             decoration: const InputDecoration(
@@ -243,7 +350,7 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                             ),
                             onChanged: (value) {
                               setState(() {
-                                _isTyping = value.isNotEmpty;
+                                isTyping = value.isNotEmpty;
                               });
                             },
                           ),
@@ -258,18 +365,21 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                                   children: [
                                     ListTile(
                                       leading: const Icon(Icons.image),
-                                      title: const Text('Image'),
-                                      onTap: () {},
+                                      title: const Text('Gallery'),
+                                      onTap: () async =>
+                                          await sendImage(service, user),
+                                    ),
+                                    ListTile(
+                                      leading: const Icon(Icons.camera_alt),
+                                      title: const Text('Photo'),
+                                      onTap: () async => await sendPhoto(
+                                        service,
+                                        user,
+                                      ),
                                     ),
                                     ListTile(
                                       leading: const Icon(Icons.description),
                                       title: const Text('Document'),
-                                      onTap: () {},
-                                    ),
-                                    ListTile(
-                                      leading:
-                                          const Icon(Icons.enhanced_encryption),
-                                      title: const Text('Sensitive content'),
                                       onTap: () {},
                                     ),
                                   ],
@@ -281,21 +391,21 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                         ),
                         IconButton(
                           onPressed: () {
-                            if (_isTyping) {
+                            if (isTyping) {
                               final message = {
                                 'sender': user,
                                 'recipient': widget.contact.name,
                                 'type': 'text',
-                                'content': _controller.text,
+                                'content': controller.text,
                               };
                               service.sendMessage(message);
                             }
                             setState(() {
-                              _controller.clear();
-                              _isTyping = false;
+                              controller.clear();
+                              isTyping = false;
                             });
                           },
-                          icon: Icon(_isTyping ? Icons.send : Icons.mic),
+                          icon: Icon(isTyping ? Icons.send : Icons.mic),
                         ),
                       ],
                     ),
@@ -322,7 +432,7 @@ class ChatBubble extends StatelessWidget {
     required this.isSentByMe,
   });
 
-  Widget _renderContent() {
+  Widget renderContent(BuildContext context) {
     switch (type) {
       case 'text':
         return Text(
@@ -332,14 +442,45 @@ class ChatBubble extends StatelessWidget {
             fontWeight: FontWeight.w500,
           ),
         );
-      case 'image':
-        return Image.network(message);
+      case 'image/jpeg' || 'image/jpg' || 'image/png':
+        return SizedBox(
+          height: 300,
+          width: MediaQuery.of(context).size.width,
+          child: GestureDetector(
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => Container(
+                  margin: const EdgeInsets.symmetric(vertical: 30),
+                  child: InteractiveViewer(
+                    minScale: 0.1,
+                    maxScale: 4.0,
+                    child: Image.network(message),
+                  ),
+                ),
+              ),
+            ),
+            child: FutureBuilder(
+              future: Future.microtask(
+                () async {
+                  final response = await http.get(Uri.parse(message));
+                  return response.statusCode == 200;
+                },
+              ),
+              builder: (context, snapshot) =>
+                  snapshot.connectionState == ConnectionState.waiting
+                      ? const Center(child: CircularProgressIndicator())
+                      : Image.network(message, fit: BoxFit.cover),
+            ),
+          ),
+        );
       case 'file':
         return Row(
           children: [
             const Icon(Icons.attach_file, color: Colors.white),
-            Text('File: ${message.split('/').last}',
-                style: const TextStyle(color: Colors.white)),
+            Text(
+              'File: ${message.split('/').last}',
+              style: const TextStyle(color: Colors.white),
+            ),
           ],
         );
       case 'audio':
@@ -383,7 +524,7 @@ class ChatBubble extends StatelessWidget {
                   : const Color.fromARGB(255, 114, 0, 108),
               borderRadius: BorderRadius.circular(15),
             ),
-            child: _renderContent(),
+            child: renderContent(context),
           ),
         ),
       ),

@@ -1,4 +1,3 @@
-import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:silent_signal/auth/register.dart';
@@ -13,15 +12,15 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _usernameController = TextEditingController();
-  final _passwordController = TextEditingController();
+  final key = GlobalKey<FormState>();
+  final usernameController = TextEditingController();
+  final passwordController = TextEditingController();
 
   Future<void> _submitForm() async {
     final service = AuthService();
     final response = await service.login(
-      _usernameController.text,
-      _passwordController.text,
+      usernameController.text,
+      passwordController.text,
     );
     if (response['token'] == null && mounted) {
       showDialog(
@@ -33,15 +32,15 @@ class _LoginScreenState extends State<LoginScreen> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('close'),
+                child: const Text('Close'),
               ),
             ],
           );
         },
       );
     } else {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('token', response['token']);
+      final preferences = await SharedPreferences.getInstance();
+      await preferences.setString('token', response['token']);
       if (mounted) {
         Navigator.pushReplacement(
           context,
@@ -80,13 +79,13 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 35),
               Form(
-                key: _formKey,
+                key: key,
                 child: Container(
                   margin: const EdgeInsets.symmetric(horizontal: 25),
                   child: Column(
                     children: [
                       TextFormField(
-                        controller: _usernameController,
+                        controller: usernameController,
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'This field cannot be empty';
@@ -108,7 +107,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 30),
                       TextFormField(
-                        controller: _passwordController,
+                        controller: passwordController,
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'This field cannot be empty';
@@ -136,7 +135,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 35),
               ElevatedButton(
                 onPressed: () {
-                  if (_formKey.currentState!.validate()) {
+                  if (key.currentState!.validate()) {
                     _submitForm();
                   }
                 },
@@ -157,18 +156,8 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 25),
               GestureDetector(
                 onTap: () => Navigator.of(context).push(
-                  PageRouteBuilder(
-                    pageBuilder: (context, animation, secondaryAnimation) {
-                      return const RegisterScreen();
-                    },
-                    transitionsBuilder:
-                        (context, animation, secondaryAnimation, child) {
-                      return FadeThroughTransition(
-                        animation: animation,
-                        secondaryAnimation: secondaryAnimation,
-                        child: child,
-                      );
-                    },
+                  MaterialPageRoute(
+                    builder: (_) => const RegisterScreen(),
                   ),
                 ),
                 child: const Text(

@@ -17,10 +17,10 @@ class ChatListScreen extends StatefulWidget {
 }
 
 class _ChatListScreenState extends State<ChatListScreen> {
-  int _index = 0;
-  final _controller = PageController();
+  int index = 0;
+  final controller = PageController();
 
-  Future<void> _logout() async {
+  Future<void> logout() async {
     final preferences = await SharedPreferences.getInstance();
     await preferences.remove('token');
     await preferences.remove('hash');
@@ -139,17 +139,17 @@ class _ChatListScreenState extends State<ChatListScreen> {
                       ),
                     ),
                     onTap: () {
-                      _logout();
+                      logout();
                     },
                   ),
                 ],
               ),
             ),
             body: PageView(
-              controller: _controller,
-              onPageChanged: (index) {
+              controller: controller,
+              onPageChanged: (value) {
                 setState(() {
-                  _index = index;
+                  index = value;
                 });
               },
               children: const [
@@ -158,8 +158,8 @@ class _ChatListScreenState extends State<ChatListScreen> {
               ],
             ),
             bottomNavigationBar: BottomNavigationBar(
-              currentIndex: _index,
-              onTap: (index) => _controller.jumpToPage(index),
+              currentIndex: index,
+              onTap: (index) => controller.jumpToPage(index),
               items: const [
                 BottomNavigationBarItem(
                   icon: Icon(Icons.chat),

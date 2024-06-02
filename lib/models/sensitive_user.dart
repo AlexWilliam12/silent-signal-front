@@ -8,9 +8,9 @@ class SensitiveUser {
   final String? picture;
   final DateTime createdAt;
   final String? temporaryMessageInterval;
-  final createdGroups = <Group>[];
-  final participateGroups = <Group>[];
-  final contacts = <User>[];
+  final List<Group> createdGroups;
+  final List<Group> participateGroups;
+  final List<User> contacts;
 
   SensitiveUser({
     required this.id,
@@ -19,9 +19,15 @@ class SensitiveUser {
     required this.picture,
     required this.createdAt,
     required this.temporaryMessageInterval,
+    required this.createdGroups,
+    required this.participateGroups,
+    required this.contacts,
   });
 
   factory SensitiveUser.fromJson(Map<String, dynamic> json) {
+    final createdGroups = json['created_groups'] as List;
+    final participateGroups = json['participate_groups'] as List;
+    final contacts = json['contacts'] as List;
     return SensitiveUser(
       id: json['id'],
       name: json['name'],
@@ -29,6 +35,21 @@ class SensitiveUser {
       picture: json['picture'],
       createdAt: DateTime.parse(json['created_at']),
       temporaryMessageInterval: json['time'],
+      createdGroups: createdGroups
+          .map(
+            (e) => Group.fromJson(e),
+          )
+          .toList(),
+      participateGroups: participateGroups
+          .map(
+            (e) => Group.fromJson(e),
+          )
+          .toList(),
+      contacts: contacts
+          .map(
+            (e) => User.fromJson(e),
+          )
+          .toList(),
     );
   }
 
@@ -40,6 +61,9 @@ class SensitiveUser {
       'picture': picture,
       'created_at': createdAt.toIso8601String(),
       'time': temporaryMessageInterval,
+      'created_groups': createdGroups,
+      'participate_groups': participateGroups,
+      'contacts': contacts,
     };
   }
 }

@@ -13,22 +13,22 @@ class SettingScreen extends StatefulWidget {
 }
 
 class _SettingScreenState extends State<SettingScreen> {
-  final _key = GlobalKey<FormState>();
-  TimeUnit _timeUnit = TimeUnit.minutes;
-  int _value = 1;
-  late bool _isEnabled;
-  bool _hasChange = false;
+  final key = GlobalKey<FormState>();
+  TimeUnit timeUnit = TimeUnit.minutes;
+  int value = 1;
+  late bool isEnabled;
+  bool hasChange = false;
 
   @override
   void initState() {
     final interval = widget.user.temporaryMessageInterval;
-    _isEnabled = interval != null;
+    isEnabled = interval != null;
     if (interval != null) {
       final values = interval.split(' ');
-      _value = int.parse(values.first);
+      value = int.parse(values.first);
       for (final key in unitLabels.keys) {
         if (key.name.toLowerCase() == values.elementAt(1)) {
-          _timeUnit = key;
+          timeUnit = key;
         }
       }
     }
@@ -37,14 +37,14 @@ class _SettingScreenState extends State<SettingScreen> {
 
   Future<void> _updateTemporaryMessages() async {
     final service = UserService();
-    if (!_hasChange) {
+    if (!hasChange) {
       await service.updateTemporaryMessages(null);
       if (mounted) {
         Provider.of<UserProvider>(context, listen: false).provide();
       }
-    } else if (_isEnabled) {
+    } else if (isEnabled) {
       String interval =
-          '$_value ${_value == 1 ? _timeUnit.name.substring(0, _timeUnit.name.length - 1).toLowerCase() : _timeUnit.name.toLowerCase()}';
+          '$value ${value == 1 ? timeUnit.name.substring(0, timeUnit.name.length - 1).toLowerCase() : timeUnit.name.toLowerCase()}';
       await service.updateTemporaryMessages(interval);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -136,12 +136,12 @@ class _SettingScreenState extends State<SettingScreen> {
                     ),
                   ),
                   Switch(
-                    value: _isEnabled,
+                    value: isEnabled,
                     onChanged: (value) {
                       setState(() {
-                        _isEnabled = value;
+                        isEnabled = value;
                       });
-                      if (!_isEnabled) {
+                      if (!isEnabled) {
                         _updateTemporaryMessages();
                       }
                     },
@@ -152,7 +152,7 @@ class _SettingScreenState extends State<SettingScreen> {
             ),
             const SizedBox(height: 30),
             ...[
-              if (_isEnabled)
+              if (isEnabled)
                 Column(
                   children: [
                     Container(
@@ -169,9 +169,9 @@ class _SettingScreenState extends State<SettingScreen> {
                           SizedBox(
                             width: 100,
                             child: Form(
-                              key: _key,
+                              key: key,
                               child: TextFormField(
-                                initialValue: _value.toString(),
+                                initialValue: value.toString(),
                                 keyboardType: TextInputType.number,
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
@@ -186,12 +186,11 @@ class _SettingScreenState extends State<SettingScreen> {
                                 decoration: const InputDecoration(
                                   labelText: 'Time',
                                 ),
-                                onChanged: (value) {
-                                  if (_key.currentState!.validate()) {
+                                onChanged: (v) {
+                                  if (key.currentState!.validate()) {
                                     setState(() {
-                                      _value =
-                                          (double.tryParse(value) ?? 0).ceil();
-                                      _hasChange = true;
+                                      value = (double.tryParse(v) ?? 0).ceil();
+                                      hasChange = true;
                                     });
                                   }
                                 },
@@ -200,7 +199,7 @@ class _SettingScreenState extends State<SettingScreen> {
                           ),
                           const SizedBox(height: 20),
                           DropdownButton<TimeUnit>(
-                            value: _timeUnit,
+                            value: timeUnit,
                             items: unitLabels.entries.map((e) {
                               return DropdownMenuItem(
                                 value: e.key,
@@ -209,8 +208,8 @@ class _SettingScreenState extends State<SettingScreen> {
                             }).toList(),
                             onChanged: (value) {
                               setState(() {
-                                _timeUnit = value!;
-                                _hasChange = true;
+                                timeUnit = value!;
+                                hasChange = true;
                               });
                             },
                           ),
