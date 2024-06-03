@@ -68,7 +68,7 @@ class _ContactScreenState extends State<ContactScreen> {
                   Navigator.of(context).pop();
                 }
               },
-              child: const Text('Send'),
+              child: const Text('Save'),
             ),
           ],
         );
@@ -83,7 +83,6 @@ class _ContactScreenState extends State<ContactScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        toolbarHeight: 65,
         backgroundColor: const Color.fromARGB(255, 0, 15, 83),
         title: const Text(
           'Contacts',
@@ -100,25 +99,23 @@ class _ContactScreenState extends State<ContactScreen> {
           ),
         ),
         actions: [
-          ...[
-            if (selected.isNotEmpty)
-              IconButton(
-                onPressed: () {},
-                icon: Row(
-                  children: [
-                    Text(
-                      '${selected.length} selected',
-                      style: const TextStyle(
-                        fontSize: 15,
-                      ),
+          if (selected.isNotEmpty)
+            IconButton(
+              onPressed: () {},
+              icon: Row(
+                children: [
+                  Text(
+                    '${selected.length} selected',
+                    style: const TextStyle(
+                      fontSize: 15,
                     ),
-                    const SizedBox(width: 10),
-                    const Icon(Icons.delete),
-                    const SizedBox(width: 5),
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: 10),
+                  const Icon(Icons.delete),
+                  const SizedBox(width: 5),
+                ],
               ),
-          ]
+            ),
         ],
       ),
       body: contacts.isEmpty

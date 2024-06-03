@@ -42,10 +42,16 @@ class _LoginScreenState extends State<LoginScreen> {
       final preferences = await SharedPreferences.getInstance();
       await preferences.setString('token', response['token']);
       if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const ChatApp()),
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('User logged successfully')),
         );
+        await Future.delayed(const Duration(seconds: 3));
+        if (mounted) {
+          Navigator.of(context).replace(
+            oldRoute: ModalRoute.of(context)!,
+            newRoute: MaterialPageRoute(builder: (_) => const ChatApp()),
+          );
+        }
       }
     }
   }

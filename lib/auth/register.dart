@@ -57,25 +57,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
         await UploadService().uploadPicture(_file!);
       }
       if (mounted) {
-        showDialog(
-          context: context,
-          builder: (context) {
-            return AlertDialog(
-              title: const Text('Message'),
-              content: const Text('User registered successfully'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('ok'),
-                ),
-              ],
-            );
-          },
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('User registered successfully')),
         );
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const ChatApp()),
-        );
+        await Future.delayed(const Duration(seconds: 3));
+        if (mounted) {
+          Navigator.of(context).replace(
+            oldRoute: ModalRoute.of(context)!,
+            newRoute: MaterialPageRoute(builder: (_) => const ChatApp()),
+          );
+        }
       }
     }
   }

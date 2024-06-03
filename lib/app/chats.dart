@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:silent_signal/app/contact.dart';
+import 'package:silent_signal/app/explore.dart';
 import 'package:silent_signal/app/group_chat.dart';
 import 'package:silent_signal/app/private_chat.dart';
 import 'package:silent_signal/app/profile.dart';
@@ -52,7 +53,6 @@ class _ChatListScreenState extends State<ChatListScreen> {
                   color: Colors.white,
                 ),
               ),
-              toolbarHeight: 65,
               backgroundColor: const Color.fromARGB(255, 0, 15, 83),
               actions: [
                 Builder(
@@ -172,12 +172,22 @@ class _ChatListScreenState extends State<ChatListScreen> {
               ],
             ),
             floatingActionButton: FloatingActionButton(
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => const ContactScreen(),
-                ),
-              ),
-              child: const Icon(Icons.contacts),
+              onPressed: () {
+                (
+                  index == 0
+                      ? Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const ContactScreen(),
+                          ),
+                        )
+                      : Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const GroupExploreScreen(),
+                          ),
+                        ),
+                );
+              },
+              child: Icon(index == 0 ? Icons.contacts : Icons.explore),
             ),
           );
         }

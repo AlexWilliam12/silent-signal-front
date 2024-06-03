@@ -1,17 +1,16 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:mime/mime.dart';
 import 'package:provider/provider.dart';
-import 'package:silent_signal/app/camera.dart';
 import 'package:silent_signal/models/private_message.dart';
 import 'package:silent_signal/models/sensitive_user.dart';
 import 'package:silent_signal/models/user.dart';
 import 'package:silent_signal/providers/providers.dart';
 import 'package:silent_signal/services/upload_service.dart';
 import 'package:silent_signal/services/websocket_service.dart';
-import 'package:http/http.dart' as http;
 
 class PrivateChatListScreen extends StatefulWidget {
   const PrivateChatListScreen({super.key});
@@ -181,14 +180,8 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
   final controller = TextEditingController();
 
   Future<void> sendPhoto(WebsocketService channel, SensitiveUser user) async {
-    final file = await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => const CameraScreen(),
-      ),
-    ) as XFile?;
-    if (mounted) {
-      Navigator.of(context).pop();
-    }
+    final picker = ImagePicker();
+    final file = await picker.pickImage(source: ImageSource.camera);
     if (file != null) {
       final service = UploadService();
       final response = await service.uploadPrivateChatFile(
@@ -223,21 +216,177 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
           'content': response['location'],
         });
       }
-      if (mounted) {
-        Navigator.of(context).pop();
-      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final service = Provider.of<PrivateChatProvider>(context);
-    final user = Provider.of<UserProvider>(context).user!;
+    final service = Provider.of<PrivateChatProvider>(context, listen: false);
+    final user = Provider.of<UserProvider>(context, listen: false).user!;
     return StreamBuilder(
       stream: service.stream,
       builder: (context, snapshot) {
         if (service.messages.isEmpty) {
-          return const CircularProgressIndicator();
+          return Scaffold(
+            appBar: AppBar(
+              title: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 22,
+                    backgroundColor: Colors.green,
+                    child: widget.contact.picture != null
+                        ? CircleAvatar(
+                            radius: 25,
+                            backgroundColor: const Color.fromARGB(
+                              255,
+                              76,
+                              78,
+                              175,
+                            ),
+                            backgroundImage: NetworkImage(
+                              widget.contact.picture!,
+                            ),
+                          )
+                        : CircleAvatar(
+                            radius: 25,
+                            backgroundColor: const Color.fromARGB(
+                              255,
+                              76,
+                              78,
+                              175,
+                            ),
+                            child: Text(
+                              widget.contact.name.substring(0, 1),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                  ),
+                  const SizedBox(width: 20),
+                  SizedBox(
+                    width: 250,
+                    child: Text(
+                      widget.contact.name,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 21,
+                        color: Colors.white,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: const Color.fromARGB(255, 0, 15, 83),
+              leading: IconButton(
+                onPressed: () => Navigator.of(context).pop(),
+                icon: const Icon(
+                  Icons.arrow_back,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+            body: Column(
+              children: [
+                Expanded(
+                  child: Center(
+                    child: Text('Send a message to ${widget.contact.name}'),
+                  ),
+                ),
+                Container(
+                  height: 90,
+                  decoration: const BoxDecoration(
+                    border: Border(
+                      top: BorderSide(
+                        width: 0.2,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ),
+                  child: Center(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 15),
+                          width: 300,
+                          child: TextField(
+                            controller: controller,
+                            autocorrect: true,
+                            textCapitalization: TextCapitalization.sentences,
+                            decoration: const InputDecoration(
+                              hintText: 'Send a message...',
+                            ),
+                            onChanged: (value) {
+                              setState(() {
+                                isTyping = value.isNotEmpty;
+                              });
+                            },
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () {
+                            showModalBottomSheet(
+                              context: context,
+                              builder: (_) {
+                                return Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    ListTile(
+                                      leading: const Icon(Icons.image),
+                                      title: const Text('Gallery'),
+                                      onTap: () {
+                                        Navigator.of(context).pop();
+                                        sendImage(service, user);
+                                      },
+                                    ),
+                                    ListTile(
+                                      leading: const Icon(Icons.camera_alt),
+                                      title: const Text('Photo'),
+                                      onTap: () {
+                                        Navigator.of(context).pop();
+                                        sendPhoto(service, user);
+                                      },
+                                    ),
+                                    ListTile(
+                                      leading: const Icon(Icons.description),
+                                      title: const Text('Document'),
+                                      onTap: () {},
+                                    ),
+                                  ],
+                                );
+                              },
+                            );
+                          },
+                          icon: const Icon(Icons.attach_file),
+                        ),
+                        IconButton(
+                          onPressed: () {
+                            if (isTyping) {
+                              final message = {
+                                'sender': user,
+                                'recipient': widget.contact.name,
+                                'type': 'text',
+                                'content': controller.text,
+                              };
+                              service.sendMessage(message);
+                            }
+                            setState(() {
+                              controller.clear();
+                              isTyping = false;
+                            });
+                          },
+                          icon: Icon(isTyping ? Icons.send : Icons.mic),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
         } else {
           final messages = service.messages
               .map((json) => PrivateMessage.fromJson(json))
@@ -299,7 +448,6 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                   ),
                 ],
               ),
-              toolbarHeight: 65,
               backgroundColor: const Color.fromARGB(255, 0, 15, 83),
               leading: IconButton(
                 onPressed: () => Navigator.of(context).pop(),
@@ -366,16 +514,18 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                                     ListTile(
                                       leading: const Icon(Icons.image),
                                       title: const Text('Gallery'),
-                                      onTap: () async =>
-                                          await sendImage(service, user),
+                                      onTap: () {
+                                        Navigator.of(context).pop();
+                                        sendImage(service, user);
+                                      },
                                     ),
                                     ListTile(
                                       leading: const Icon(Icons.camera_alt),
                                       title: const Text('Photo'),
-                                      onTap: () async => await sendPhoto(
-                                        service,
-                                        user,
-                                      ),
+                                      onTap: () {
+                                        Navigator.of(context).pop();
+                                        sendPhoto(service, user);
+                                      },
                                     ),
                                     ListTile(
                                       leading: const Icon(Icons.description),

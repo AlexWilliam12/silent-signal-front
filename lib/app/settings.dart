@@ -61,7 +61,6 @@ class _SettingScreenState extends State<SettingScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        toolbarHeight: 65,
         backgroundColor: const Color.fromARGB(255, 0, 15, 83),
         title: const Text(
           'Temporary Messages',

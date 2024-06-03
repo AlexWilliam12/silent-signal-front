@@ -26,16 +26,13 @@ abstract class WebsocketService with ChangeNotifier {
     _socket!.listen((content) {
       final decodedContent = jsonDecode(content);
       if (decodedContent is List) {
-        for (var element in decodedContent) {
-          _messages.add(element);
-          _controller.add(messages.length);
-          notifyListeners();
-        }
+        _messages.addAll(decodedContent);
+        _controller.add(messages.length);
       } else {
         _messages.add(decodedContent);
         _controller.add(messages.length);
-        notifyListeners();
       }
+      notifyListeners();
     });
   }
 
