@@ -14,6 +14,22 @@ class PrivateChatListTileLeading extends StatelessWidget {
     required this.message,
   });
 
+  String formatMessage() {
+    if (message.type == 'text') {
+      return message.sender.name == user.name
+          ? 'You sent: ${message.content}'
+          : 'Sent you: ${message.content}';
+    } else {
+      return message.sender.name == user.name
+          ? 'You sent: ${message.type.substring(0, message.type.indexOf('/'))} file'
+          : 'Sent you: ${message.type.substring(0, message.type.indexOf('/'))} file';
+    }
+  }
+
+  String formatTime() {
+    return '${message.createdAt.month}/${message.createdAt.day}/${message.createdAt.year}';
+  }
+
   @override
   Widget build(BuildContext context) {
     return message.sender.name == user.name
@@ -22,7 +38,8 @@ class PrivateChatListTileLeading extends StatelessWidget {
                 isLeadingImage: true,
                 leading: message.recipient.picture!,
                 title: message.recipient.name,
-                subtitle: message.content,
+                subtitle: formatMessage(),
+                trailing: formatTime(),
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (_) => PrivateChatScreen(
@@ -37,7 +54,8 @@ class PrivateChatListTileLeading extends StatelessWidget {
                 isLeadingImage: false,
                 leading: message.recipient.name.substring(0, 1),
                 title: message.sender.name,
-                subtitle: message.content,
+                subtitle: formatMessage(),
+                trailing: formatTime(),
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (_) => PrivateChatScreen(
@@ -53,7 +71,8 @@ class PrivateChatListTileLeading extends StatelessWidget {
                 isLeadingImage: true,
                 leading: message.sender.picture!,
                 title: message.recipient.name,
-                subtitle: message.content,
+                subtitle: formatMessage(),
+                trailing: formatTime(),
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (_) => PrivateChatScreen(
@@ -68,7 +87,8 @@ class PrivateChatListTileLeading extends StatelessWidget {
                 isLeadingImage: false,
                 leading: message.sender.name.substring(0, 1),
                 title: message.sender.name,
-                subtitle: message.content,
+                subtitle: formatMessage(),
+                trailing: formatTime(),
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (_) => PrivateChatScreen(

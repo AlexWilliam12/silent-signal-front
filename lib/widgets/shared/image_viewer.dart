@@ -15,12 +15,14 @@ class ImageViewer extends StatelessWidget {
     return GestureDetector(
       onTap: () => Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (_) => Container(
-            margin: const EdgeInsets.symmetric(vertical: 30),
-            child: InteractiveViewer(
-              minScale: 0.1,
-              maxScale: 4.0,
-              child: Image.network(path),
+          builder: (_) => PopScope(
+            child: Container(
+              margin: const EdgeInsets.symmetric(vertical: 30),
+              child: InteractiveViewer(
+                minScale: 0.1,
+                maxScale: 4.0,
+                child: Image.network(path),
+              ),
             ),
           ),
         ),

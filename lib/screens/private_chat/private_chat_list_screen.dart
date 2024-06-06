@@ -15,32 +15,31 @@ class PrivateChatListScreen extends StatelessWidget {
 
     if (user == null) {
       return const LoadScreen();
-    } else {
-      return StreamBuilder(
-        stream: model.stream,
-        builder: (context, snapshot) {
-          if (model.messages.isEmpty) {
-            return const Center(
-              child: Text('No contact messages available yet'),
-            );
-          } else {
-            final messages = model.filterLastMessages(
-              model.wrapList(),
-              user.name,
-            );
-            return ListView.builder(
-              itemCount: messages.length,
-              itemBuilder: (context, index) {
-                final message = messages[index];
-                return PrivateChatListTileLeading(
-                  user: user,
-                  message: message,
-                );
-              },
-            );
-          }
-        },
-      );
     }
+    return StreamBuilder(
+      stream: model.stream,
+      builder: (context, snapshot) {
+        if (model.messages.isEmpty) {
+          return const Center(
+            child: Text('No contact messages available yet'),
+          );
+        } else {
+          final messages = model.filterLastMessages(
+            model.wrapList(),
+            user.name,
+          );
+          return ListView.builder(
+            itemCount: messages.length,
+            itemBuilder: (context, index) {
+              final message = messages[index];
+              return PrivateChatListTileLeading(
+                user: user,
+                message: message,
+              );
+            },
+          );
+        }
+      },
+    );
   }
 }

@@ -8,8 +8,9 @@ import 'package:mime/mime.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
+import 'package:refactoring/models/group_model.dart';
 import 'package:refactoring/models/sensitive_user_model.dart';
-import 'package:refactoring/models/user_model.dart';
+import 'package:refactoring/screens/group_chat/group_chat_widgets.dart';
 import 'package:refactoring/utils/fortmat_file.dart';
 import 'package:refactoring/view_models/chat_view_model.dart';
 import 'package:refactoring/view_models/upload_view_model.dart';
@@ -19,17 +20,15 @@ import 'package:refactoring/widgets/shared/chat_bubble.dart';
 import 'package:refactoring/widgets/shared/custom_app_bar.dart';
 import 'package:refactoring/widgets/shared/modal_bottom_sheet_action.dart';
 
-import 'private_chat_widgets.dart';
-
-class PrivateChatScreen extends StatefulWidget {
-  final UserModel contact;
-  const PrivateChatScreen({super.key, required this.contact});
+class GroupChatScreen extends StatefulWidget {
+  final GroupModel group;
+  const GroupChatScreen({super.key, required this.group});
 
   @override
-  State<PrivateChatScreen> createState() => _PrivateChatScreenState();
+  State<GroupChatScreen> createState() => _GroupChatScreenState();
 }
 
-class _PrivateChatScreenState extends State<PrivateChatScreen> {
+class _GroupChatScreenState extends State<GroupChatScreen> {
   final typingNotifier = ValueNotifier<bool>(false);
   final recordingNotifier = ValueNotifier<bool>(false);
   final controller = TextEditingController();
@@ -61,10 +60,10 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
     }
   }
 
-  void sendTextMessage(PrivateChatViewModel model, SensitiveUserModel user) {
+  void sendTextMessage(GroupChatViewModel model, SensitiveUserModel user) {
     final message = {
       'sender': user,
-      'recipient': widget.contact.name,
+      'group': widget.group.name,
       'type': 'text',
       'content': controller.text,
     };
@@ -73,7 +72,7 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
   }
 
   Future<void> sendImageFile(
-    PrivateChatViewModel model,
+    GroupChatViewModel model,
     SensitiveUserModel user,
   ) async {
     final file = await ImagePicker().pickImage(source: ImageSource.gallery);
@@ -85,7 +84,7 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
       if (response.isNotEmpty) {
         model.sendMessage({
           'sender': user.name,
-          'recipient': widget.contact.name,
+          'group': widget.group.name,
           'type': lookupMimeType(file.path) ?? 'application/octet-stream',
           'content': response,
         });
@@ -102,7 +101,7 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
   }
 
   Future<void> sendTakedPicture(
-    PrivateChatViewModel model,
+    GroupChatViewModel model,
     SensitiveUserModel user,
   ) async {
     final file = await ImagePicker().pickImage(source: ImageSource.camera);
@@ -114,7 +113,7 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
       if (response.isNotEmpty) {
         model.sendMessage({
           'sender': user.name,
-          'recipient': widget.contact.name,
+          'group': widget.group.name,
           'type': lookupMimeType(file.path) ?? 'application/octet-stream',
           'content': response,
         });
@@ -131,7 +130,7 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
   }
 
   Future<void> sendDocumentFile(
-    PrivateChatViewModel model,
+    GroupChatViewModel model,
     SensitiveUserModel user,
   ) async {
     final result = await FilePicker.platform.pickFiles(
@@ -148,7 +147,7 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
         if (response.isNotEmpty) {
           model.sendMessage({
             'sender': user.name,
-            'recipient': widget.contact.name,
+            'group': widget.group.name,
             'type': lookupMimeType(file.path) ?? 'application/octet-stream',
             'content': response,
           });
@@ -166,7 +165,7 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
   }
 
   Future<void> sendVideoFile(
-    PrivateChatViewModel model,
+    GroupChatViewModel model,
     SensitiveUserModel user,
   ) async {
     final file = await ImagePicker().pickVideo(source: ImageSource.gallery);
@@ -178,7 +177,7 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
       if (response.isNotEmpty) {
         model.sendMessage({
           'sender': user.name,
-          'recipient': widget.contact.name,
+          'group': widget.group.name,
           'type': lookupMimeType(file.path) ?? 'application/octet-stream',
           'content': response,
         });
@@ -195,7 +194,7 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
   }
 
   Future<void> sendRecordedVideo(
-    PrivateChatViewModel model,
+    GroupChatViewModel model,
     SensitiveUserModel user,
   ) async {
     final file = await ImagePicker().pickVideo(source: ImageSource.camera);
@@ -207,7 +206,7 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
       if (response.isNotEmpty) {
         model.sendMessage({
           'sender': user.name,
-          'recipient': widget.contact.name,
+          'group': widget.group.name,
           'type': lookupMimeType(file.path) ?? 'application/octet-stream',
           'content': response,
         });
@@ -221,41 +220,10 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
         }
       }
     }
-    // Navigator.of(context).push(
-    //   MaterialPageRoute(
-    //     builder: (context) {
-    //       return CameraView(contact: widget.contact);
-    //     },
-    //   ),
-    // ).then((value) async {
-    //   if (mounted) {
-    //     Navigator.pop(context);
-    //   }
-    //   if (value != null) {
-    //     final file = formatFile(value as File, 'mp4');
-    //     final response = await UploadViewModel().uploadChatFile(file);
-    //     if (response.isNotEmpty) {
-    //       model.sendMessage({
-    //         'sender': user.name,
-    //         'recipient': widget.contact.name,
-    //         'type': lookupMimeType(file.path) ?? 'application/octet-stream',
-    //         'content': response,
-    //       });
-    //       if (mounted) {
-    //         ScaffoldMessenger.of(context).showSnackBar(
-    //           const SnackBar(
-    //             duration: Duration(milliseconds: 500),
-    //             content: Text('Sending...'),
-    //           ),
-    //         );
-    //       }
-    //     }
-    //   }
-    // });
   }
 
   Future<void> sendAudioFile(
-    PrivateChatViewModel model,
+    GroupChatViewModel model,
     SensitiveUserModel user,
   ) async {
     final result = await FilePicker.platform.pickFiles(
@@ -272,7 +240,7 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
         if (response.isNotEmpty) {
           model.sendMessage({
             'sender': user.name,
-            'recipient': widget.contact.name,
+            'group': widget.group.name,
             'type': lookupMimeType(file.path) ?? 'application/octet-stream',
             'content': response,
           });
@@ -291,7 +259,7 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
 
   Future<void> sendAudioMessage(
     File originalFile,
-    PrivateChatViewModel model,
+    GroupChatViewModel model,
     SensitiveUserModel user,
   ) async {
     final file = formatFile(originalFile, 'mp3');
@@ -299,7 +267,7 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
     if (response.isNotEmpty) {
       model.sendMessage({
         'sender': user.name,
-        'recipient': widget.contact.name,
+        'group': widget.group.name,
         'type': lookupMimeType(file.path) ?? 'application/octet-stream',
         'content': response,
       });
@@ -321,7 +289,7 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
   }
 
   Future<void> stopAudioRecord(
-    PrivateChatViewModel model,
+    GroupChatViewModel model,
     SensitiveUserModel user,
   ) async {
     recordingNotifier.value = false;
@@ -332,18 +300,14 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
   @override
   Widget build(BuildContext context) {
     final user = Provider.of<UserViewModel>(context).user!;
-    final model = Provider.of<PrivateChatViewModel>(context);
+    final model = Provider.of<GroupChatViewModel>(context);
 
-    final messages = model.filterByUsers(
-      user.name,
-      widget.contact.name,
-      model.wrapList(),
-    );
+    final messages = model.filterByGroup(widget.group.name, model.wrapList());
 
     return Scaffold(
       appBar: CustomAppBar(
         isMainScreen: false,
-        customTitle: PrivateChatAppBarTitle(contact: widget.contact),
+        customTitle: GroupChatAppBarTitle(group: widget.group),
         actions: const [],
       ),
       body: StreamBuilder(
@@ -355,7 +319,7 @@ class _PrivateChatScreenState extends State<PrivateChatScreen> {
                 child: messages.isEmpty
                     ? Center(
                         child: Text(
-                          'Send a message to ${widget.contact.name}',
+                          'Send a message in the ${widget.group.name} group',
                         ),
                       )
                     : ListView.builder(

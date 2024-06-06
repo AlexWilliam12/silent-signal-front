@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:refactoring/models/sensitive_user_model.dart';
 import 'package:refactoring/screens/contact/contact_screen.dart';
 import 'package:refactoring/screens/group_explore/group_explore_screen.dart';
 import 'package:refactoring/screens/profile/profile_screen.dart';
 import 'package:refactoring/screens/settings/settings_screen.dart';
+import 'package:refactoring/view_models/group_view_model.dart';
 
 class MainAppBar extends StatelessWidget {
   const MainAppBar({super.key});
@@ -39,8 +42,9 @@ class MainAppBar extends StatelessWidget {
 }
 
 class MainDrawer extends StatelessWidget {
+  final SensitiveUserModel user;
   final Function() onTap;
-  const MainDrawer({super.key, required this.onTap});
+  const MainDrawer({super.key, required this.onTap, required this.user});
 
   @override
   Widget build(BuildContext context) {
@@ -96,7 +100,7 @@ class MainDrawer extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const SettingsScreen(),
+                  builder: (context) => SettingsScreen(user: user),
                 ),
               );
             },
@@ -188,7 +192,10 @@ class MainFloatingActionButton extends StatelessWidget {
                 )
               : Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (_) => const GroupExploreScreen(),
+                    builder: (_) => ChangeNotifierProvider<GroupViewModel>(
+                      create: (_) => GroupViewModel()..fetchAllGroups(),
+                      child: const GroupExploreScreen(),
+                    ),
                   ),
                 ),
         );

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:refactoring/screens/group_chat_list/group_chat_list_screen.dart';
+import 'package:refactoring/screens/group_chat/group_chat_list_screen.dart';
 import 'package:refactoring/screens/login/login_screen.dart';
 import 'package:refactoring/screens/main/main_widgets.dart';
 import 'package:refactoring/screens/private_chat/private_chat_list_screen.dart';
@@ -58,7 +58,7 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ],
       ),
-      endDrawer: MainDrawer(onTap: () async => await logout()),
+      endDrawer: MainDrawer(onTap: () async => await logout(), user: user),
       body: MainBody(
         controller: controller,
         onPageChanged: (value) {
@@ -66,9 +66,9 @@ class _MainScreenState extends State<MainScreen> {
             index = value;
           });
         },
-        routes: const [
-          PrivateChatListScreen(),
-          GroupChatListScreen(),
+        routes: [
+          const PrivateChatListScreen(),
+          GroupChatListScreen(user: user),
         ],
       ),
       bottomNavigationBar: MainBottomNavigator(

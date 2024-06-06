@@ -1,9 +1,9 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:refactoring/models/sensitive_user_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
 
 class UserViewModel with ChangeNotifier {
   SensitiveUserModel? _user;
@@ -56,5 +56,20 @@ class UserViewModel with ChangeNotifier {
     return response.statusCode == 200
         ? 'Successfully deleted contacts!'
         : response.body;
+  }
+
+  Future<void> updateTemporaryMessages(String? interval) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String token = prefs.get('token')! as String;
+    String host = prefs.get('host')! as String;
+    final response = await http.post(
+      Uri.parse('http://$host/user/temporary/messages'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({'time': interval}),
+    );
+    debugPrint(response.body);
   }
 }

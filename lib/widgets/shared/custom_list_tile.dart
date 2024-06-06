@@ -5,6 +5,7 @@ class CustomListTile extends StatelessWidget {
   final String leading;
   final String title;
   final String? subtitle;
+  final String? trailing;
   final void Function() onTap;
   final void Function()? onLongPress;
   final bool? selected;
@@ -18,6 +19,7 @@ class CustomListTile extends StatelessWidget {
     required this.onTap,
     this.onLongPress,
     this.selected,
+    this.trailing,
   });
 
   @override
@@ -60,6 +62,12 @@ class CustomListTile extends StatelessWidget {
             ? Text(
                 subtitle!,
                 overflow: TextOverflow.ellipsis,
+              )
+            : null,
+        trailing: trailing != null
+            ? Opacity(
+                opacity: 0.5,
+                child: Text(trailing!),
               )
             : null,
         contentPadding: const EdgeInsets.symmetric(

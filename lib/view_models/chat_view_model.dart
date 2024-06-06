@@ -57,6 +57,30 @@ class GroupChatViewModel extends _ChatViewModel {
   List<GroupMessageModel> wrapList() {
     return super.messages.map((e) => GroupMessageModel.fromJson(e)).toList();
   }
+
+  List<GroupMessageModel> filterLastMessages(List<GroupMessageModel> messages) {
+    final lastMessages = <String, GroupMessageModel>{};
+    for (var message in messages) {
+      if (lastMessages.containsKey(message.group.name)) {
+        final lastMessage = lastMessages[message.group.name];
+        if (lastMessage!.createdAt.isBefore(message.createdAt)) {
+          lastMessages[message.group.name] = message;
+        }
+      } else {
+        lastMessages[message.group.name] = message;
+      }
+    }
+    return lastMessages.values.toList();
+  }
+
+  List<GroupMessageModel> filterByGroup(
+    String groupName,
+    List<GroupMessageModel> messages,
+  ) {
+    return messages
+        .where((message) => message.group.name == groupName)
+        .toList();
+  }
 }
 
 class _ChatViewModel with ChangeNotifier {
